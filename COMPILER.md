@@ -99,3 +99,14 @@ Si les boutons **Catégories** / **Ranger ici** chevauchent un autre menu, chang
 - `LargeurBoutons` : largeur de chaque bouton.
 
 Avec le mod Configuration Manager (touche F1 en jeu), les changements s'appliquent directement, sans relancer.
+
+## Tester l'intégration Quick Stack Store Sort Trash Restock
+
+Au lancement, `LogOutput.log` doit afficher `Intégration Quick Stack Store : active.`
+
+1. Donne une catégorie à un coffre **vide** (ex. Minerais et métaux), mets du cuivre dans ton inventaire.
+2. Ouvre un autre coffre à côté et clique **Stockage rapide** (ou sa touche) : le cuivre doit partir dans le coffre catégorisé, même s'il n'en contenait pas.
+3. Ouvre un coffre catégorisé en mode **Strict** et clique **Tout stocker** : seuls les objets de ses catégories y entrent.
+4. Mets un objet en favori (Alt + clic) : ni Quick Stack ni la touche L ne doivent le déplacer.
+
+Désactivable dans la config : `[Compatibilite] QuickStackStore = false`.

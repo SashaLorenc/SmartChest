@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SmartChest.Catalog;
 using SmartChest.Chests;
+using SmartChest.Compat;
 using UnityEngine;
 
 namespace SmartChest.Storing
@@ -25,7 +26,7 @@ namespace SmartChest.Storing
             Container open = InventoryGui.instance != null ? InventoryGui.instance.m_currentContainer : null;
 
             var targets = new List<Target>();
-            foreach (Container c in Object.FindObjectsOfType<Container>())
+            foreach (Container c in ContainerRegistry.All())
             {
                 float dist = Vector3.Distance(player.transform.position, c.transform.position);
                 if (dist > Plugin.StoreRadius.Value) continue;
@@ -93,7 +94,7 @@ namespace SmartChest.Storing
             // Copie de la liste : on modifie l'inventaire pendant la boucle
             foreach (ItemDrop.ItemData item in playerInv.GetAllItems().ToList())
             {
-                if (!CanStore(item)) continue;
+                if (!CanStore(item) || QuickStackStoreCompat.IsFavorited(player, item)) continue;
 
                 List<string> itemCats = CatalogManager.GetItemCategories(item);
 

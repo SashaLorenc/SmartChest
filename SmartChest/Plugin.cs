@@ -2,6 +2,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using SmartChest.Catalog;
+using SmartChest.Compat;
 using SmartChest.Storing;
 using SmartChest.UI;
 using HarmonyLib;
@@ -33,6 +34,7 @@ namespace SmartChest
         public static ConfigEntry<KeyboardShortcut> EditItemKey;
         public static ConfigEntry<bool> SkipHotbar;
         public static ConfigEntry<bool> ShowCategoriesInTooltip;
+        public static ConfigEntry<bool> QuickStackIntegration;
         public static ConfigEntry<ButtonPlacement> ButtonsPlacement;
         public static ConfigEntry<float> ButtonsOffsetX;
         public static ConfigEntry<float> ButtonsOffsetY;
@@ -50,9 +52,9 @@ namespace SmartChest
 
             _harmony = new Harmony(ModGuid);
             _harmony.PatchAll(typeof(Plugin).Assembly);
+            QuickStackStoreCompat.TryInit(_harmony);
 
-            bool qss = BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey(QuickStackStoreGuid);
-            Logger.LogInfo($"{ModName} {ModVersion} chargé. Quick Stack Store détecté : {qss}");
+            Logger.LogInfo($"{ModName} {ModVersion} chargé.");
         }
 
         private void Update()
@@ -99,6 +101,9 @@ namespace SmartChest
             ButtonsOffsetX.SettingChanged += (_, __) => ChestPanel.ResetButtons();
             ButtonsOffsetY.SettingChanged += (_, __) => ChestPanel.ResetButtons();
             ButtonsWidth.SettingChanged += (_, __) => ChestPanel.ResetButtons();
+
+            QuickStackIntegration = Config.Bind("Compatibilite", "QuickStackStore", true,
+                "Avec Quick Stack Store Sort Trash Restock : le stockage rapide envoie aussi les objets vers les coffres de leur catégorie, et Tout stocker respecte les coffres en mode strict.");
 
             SkipHotbar = Config.Bind("Rangement", "IgnorerBarreRaccourcis", true,
                 "Ne jamais ranger les objets de la barre de raccourcis (1 à 8).");
