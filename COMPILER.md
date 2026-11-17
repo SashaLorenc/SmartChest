@@ -79,3 +79,13 @@ Erreurs fréquentes :
 2. Survole des objets dans l'inventaire : l'infobulle se termine par une ligne « Catégories : ... » en couleur.
 3. Le fichier `BepInEx/config/SmartChest/catalog.json` est créé avec les 15 catégories par défaut.
 4. Pour voir la catégorie de **tous** les objets d'un coup : ouvre la console avec F5 (il faut l'option de lancement `-console` : Steam → Valheim → Propriétés → Options de lancement, ou dans r2modman Settings → Set launch parameters), puis tape `smartchest_dump`. Le résultat est dans `BepInEx/config/SmartChest/items_dump.txt`. Envoie-le-moi pour qu'on corrige les objets mal rangés.
+
+## Tester l'étape 3 (coffres et rangement)
+
+1. `git pull`, recompile, lance le jeu.
+2. Ouvre un coffre : deux boutons apparaissent au-dessus, **Catégories** et **Ranger ici**.
+3. **Catégories** ouvre un panneau : coche une ou plusieurs catégories. Le bouton **Mode** bascule entre *Strict* (seulement ses catégories) et *Trop-plein* (prend aussi ce qui n'a trouvé aucun coffre). En bas, tape un nom et clique **+ Nouvelle catégorie** pour en créer une (elle est cochée pour ce coffre).
+4. Survole le coffre fermé : ses catégories s'affichent sous son nom.
+5. **Ranger ici** dépose dans ce coffre seulement les objets de ses catégories.
+6. Hors de l'inventaire, la touche **L** range tout l'inventaire dans les coffres catégorisés à moins de 10 m. La barre de raccourcis (1 à 8) et l'équipement porté ne bougent pas (réglable dans la config).
+7. Quitte et relance le monde : les catégories des coffres doivent être conservées.

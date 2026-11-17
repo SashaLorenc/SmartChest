@@ -22,5 +22,12 @@
   "smartchest_cat_poissons": "Poissons et appâts",
   "smartchest_cat_boss": "Objets de boss",
   "smartchest_cat_divers": "Divers",
-  "smartchest_cat_valeurs": "Objets de valeur"
+  "smartchest_cat_valeurs": "Objets de valeur",
+  "smartchest_store_here": "Ranger ici",
+  "smartchest_close": "Fermer",
+  "smartchest_mode": "Mode",
+  "smartchest_new_category_placeholder": "Nom de la nouvelle catégorie",
+  "smartchest_msg_no_categories": "Ce coffre n'a aucune catégorie",
+  "smartchest_msg_no_chest": "Aucun coffre catégorisé à portée",
+  "smartchest_msg_nothing": "Rien à ranger"
 }

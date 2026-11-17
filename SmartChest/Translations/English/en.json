@@ -22,5 +22,12 @@
   "smartchest_cat_poissons": "Fish and bait",
   "smartchest_cat_boss": "Boss items",
   "smartchest_cat_divers": "Misc",
-  "smartchest_cat_valeurs": "Valuables"
+  "smartchest_cat_valeurs": "Valuables",
+  "smartchest_store_here": "Store here",
+  "smartchest_close": "Close",
+  "smartchest_mode": "Mode",
+  "smartchest_new_category_placeholder": "New category name",
+  "smartchest_msg_no_categories": "This chest has no category",
+  "smartchest_msg_no_chest": "No categorized chest in range",
+  "smartchest_msg_nothing": "Nothing to store"
 }

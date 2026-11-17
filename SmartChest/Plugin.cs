@@ -2,6 +2,8 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using SmartChest.Catalog;
+using SmartChest.Storing;
+using SmartChest.UI;
 using HarmonyLib;
 using Jotunn;
 using Jotunn.Managers;
@@ -47,6 +49,23 @@ namespace SmartChest
 
             bool qss = BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey(QuickStackStoreGuid);
             Logger.LogInfo($"{ModName} {ModVersion} chargé. Quick Stack Store détecté : {qss}");
+        }
+
+        private void Update()
+        {
+            if (Player.m_localPlayer == null || !StoreKey.Value.IsDown()) return;
+            if (IsTypingSomewhere()) return;
+            StoreService.StoreNearby(Player.m_localPlayer);
+        }
+
+        /// <summary>Le joueur écrit dans le chat, la console, un panneau... : on ignore la touche.</summary>
+        private static bool IsTypingSomewhere()
+        {
+            if (ChestPanel.IsTyping) return true;
+            if (Chat.instance != null && Chat.instance.HasFocus()) return true;
+            if (Console.IsVisible() || TextInput.IsVisible() || Menu.IsVisible()) return true;
+            if (Minimap.instance != null && Minimap.instance.m_mode == Minimap.MapMode.Large) return true;
+            return false;
         }
 
         private void BindConfig()
