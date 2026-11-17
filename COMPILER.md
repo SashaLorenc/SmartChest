@@ -89,3 +89,13 @@ Erreurs fréquentes :
 5. **Ranger ici** dépose dans ce coffre seulement les objets de ses catégories.
 6. Hors de l'inventaire, la touche **L** range tout l'inventaire dans les coffres catégorisés à moins de 10 m. La barre de raccourcis (1 à 8) et l'équipement porté ne bougent pas (réglable dans la config).
 7. Quitte et relance le monde : les catégories des coffres doivent être conservées.
+
+## Déplacer les boutons du coffre
+
+Si les boutons **Catégories** / **Ranger ici** chevauchent un autre menu, change dans `BepInEx/config/sashalorenc.SmartChest.cfg`, section `[Interface]` :
+
+- `PositionBoutons` : `Dessus`, `Dessous` (par défaut), `Gauche` ou `Droite` du coffre.
+- `DecalageX` / `DecalageY` : décalage fin en pixels.
+- `LargeurBoutons` : largeur de chaque bouton.
+
+Avec le mod Configuration Manager (touche F1 en jeu), les changements s'appliquent directement, sans relancer.

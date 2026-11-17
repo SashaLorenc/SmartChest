@@ -13,6 +13,15 @@ namespace SmartChest.UI
     /// Boutons « Catégories » et « Ranger ici » au-dessus du coffre ouvert,
     /// et panneau de cases à cocher pour choisir les catégories du coffre.
     /// </summary>
+    /// <summary>Où placer les boutons autour du coffre ouvert (réglable dans la config).</summary>
+    public enum ButtonPlacement
+    {
+        Dessus,
+        Dessous,
+        Gauche,
+        Droite,
+    }
+
     public static class ChestPanel
     {
         private const float RowHeight = 34f;
@@ -45,22 +54,60 @@ namespace SmartChest.UI
             if (_panel != null && (current == null || current != _panelFor)) Close();
         }
 
+        /// <summary>Recrée les boutons au prochain affichage (après un changement de config).</summary>
+        public static void ResetButtons()
+        {
+            if (_buttons != null) Object.Destroy(_buttons);
+            _buttons = null;
+        }
+
         private static void CreateButtons(InventoryGui gui)
         {
+            ButtonPlacement place = Plugin.ButtonsPlacement.Value;
+            bool vertical = place == ButtonPlacement.Gauche || place == ButtonPlacement.Droite;
+            float w = Plugin.ButtonsWidth.Value;
+            const float h = 30f;
+            const float gap = 6f;
+
             _buttons = new GameObject("SmartChestButtons", typeof(RectTransform));
             var rt = (RectTransform)_buttons.transform;
             rt.SetParent(gui.m_container, false);
-            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
-            rt.pivot = new Vector2(0f, 0f);
-            rt.anchoredPosition = new Vector2(0f, 6f);
-            rt.sizeDelta = new Vector2(400f, 36f);
+            rt.sizeDelta = vertical ? new Vector2(w, h * 2 + gap) : new Vector2(w * 2 + gap, h);
 
-            AddButton(_buttons.transform, "$smartchest_categories", 0f, 0f, 180f, 34f, () =>
+            var offset = new Vector2(Plugin.ButtonsOffsetX.Value, Plugin.ButtonsOffsetY.Value);
+            switch (place)
+            {
+                case ButtonPlacement.Dessus:
+                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+                    rt.pivot = new Vector2(0f, 0f);
+                    rt.anchoredPosition = new Vector2(0f, gap) + offset;
+                    break;
+                case ButtonPlacement.Dessous:
+                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 0f);
+                    rt.pivot = new Vector2(0f, 1f);
+                    rt.anchoredPosition = new Vector2(0f, -gap) + offset;
+                    break;
+                case ButtonPlacement.Gauche:
+                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+                    rt.pivot = new Vector2(1f, 1f);
+                    rt.anchoredPosition = new Vector2(-gap, 0f) + offset;
+                    break;
+                default: // Droite
+                    rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
+                    rt.pivot = new Vector2(0f, 1f);
+                    rt.anchoredPosition = new Vector2(gap, 0f) + offset;
+                    break;
+            }
+
+            float x2 = vertical ? 0f : w + gap;
+            float y2 = vertical ? h + gap : 0f;
+
+            AddButton(_buttons.transform, "$smartchest_categories", 0f, 0f, w, h, () =>
             {
                 if (IsOpen) Close();
                 else Open(InventoryGui.instance.m_currentContainer);
             });
-            AddButton(_buttons.transform, "$smartchest_store_here", 190f, 0f, 180f, 34f, () =>
+            AddButton(_buttons.transform, "$smartchest_store_here", x2, y2, w, h, () =>
             {
                 StoreService.StoreInto(Player.m_localPlayer, InventoryGui.instance.m_currentContainer);
             });

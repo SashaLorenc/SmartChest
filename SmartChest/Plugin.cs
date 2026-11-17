@@ -33,6 +33,10 @@ namespace SmartChest
         public static ConfigEntry<KeyboardShortcut> EditItemKey;
         public static ConfigEntry<bool> SkipHotbar;
         public static ConfigEntry<bool> ShowCategoriesInTooltip;
+        public static ConfigEntry<ButtonPlacement> ButtonsPlacement;
+        public static ConfigEntry<float> ButtonsOffsetX;
+        public static ConfigEntry<float> ButtonsOffsetY;
+        public static ConfigEntry<float> ButtonsWidth;
 
         private Harmony _harmony;
 
@@ -82,6 +86,19 @@ namespace SmartChest
 
             ShowCategoriesInTooltip = Config.Bind("Affichage", "CategoriesDansInfobulle", true,
                 "Affiche les catégories d'un objet dans son infobulle.");
+
+            ButtonsPlacement = Config.Bind("Interface", "PositionBoutons", ButtonPlacement.Dessous,
+                "Où placer les boutons Catégories / Ranger ici autour du coffre ouvert : Dessus, Dessous, Gauche, Droite.");
+            ButtonsOffsetX = Config.Bind("Interface", "DecalageX", 0f,
+                "Décalage horizontal des boutons en pixels (positif = vers la droite).");
+            ButtonsOffsetY = Config.Bind("Interface", "DecalageY", 0f,
+                "Décalage vertical des boutons en pixels (positif = vers le haut).");
+            ButtonsWidth = Config.Bind("Interface", "LargeurBoutons", 150f,
+                new ConfigDescription("Largeur de chaque bouton en pixels.", new AcceptableValueRange<float>(80f, 300f)));
+            ButtonsPlacement.SettingChanged += (_, __) => ChestPanel.ResetButtons();
+            ButtonsOffsetX.SettingChanged += (_, __) => ChestPanel.ResetButtons();
+            ButtonsOffsetY.SettingChanged += (_, __) => ChestPanel.ResetButtons();
+            ButtonsWidth.SettingChanged += (_, __) => ChestPanel.ResetButtons();
 
             SkipHotbar = Config.Bind("Rangement", "IgnorerBarreRaccourcis", true,
                 "Ne jamais ranger les objets de la barre de raccourcis (1 à 8).");
