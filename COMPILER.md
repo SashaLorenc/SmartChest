@@ -1,5 +1,28 @@
 # Compiler et tester Smart Chest sur ton PC
 
+## 0. Récupérer le code (une seule fois)
+
+1. Installe **Git pour Windows** : https://git-scm.com/download/win (options par défaut).
+2. Ouvre un terminal (PowerShell) dans le dossier où tu veux le projet, par ex. `C:\Dev`, puis :
+
+```
+git clone https://github.com/SashaLorenc/SmartChest.git
+cd SmartChest
+```
+
+3. Recopie ton `Environment.props` à la racine de ce nouveau dossier (étape 2 plus bas).
+
+## À chaque modification
+
+Dans le dossier `SmartChest` :
+
+```
+git pull
+dotnet build SmartChest/SmartChest.csproj -c Release
+```
+
+`git pull` récupère mes derniers changements, la compilation copie la DLL dans ton profil r2modman. Ton `Environment.props` n'est jamais écrasé.
+
 ## 1. Installer une seule fois
 
 1. **SDK .NET 8** (ou plus récent) : https://dotnet.microsoft.com/download. Il compile aussi les projets .NET Framework 4.6.2 grâce au paquet `Microsoft.NETFramework.ReferenceAssemblies` déjà inclus dans le projet.

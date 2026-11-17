@@ -24,6 +24,7 @@ namespace SmartChest.Catalog
         public const string Trophies = "trophees";
         public const string Fish = "poissons";
         public const string BossItems = "boss";
+        public const string Valuables = "valeurs";
         public const string Misc = "divers";
 
         public static List<Category> CreateDefaultCategories()
@@ -44,6 +45,7 @@ namespace SmartChest.Catalog
                 Def(Trophies, "FFD700"),
                 Def(Fish, "1ABC9C"),
                 Def(BossItems, "C0392B"),
+                Def(Valuables, "F7DC6F"),
                 Def(Misc, "7F8C8D"),
             };
         }
@@ -57,7 +59,7 @@ namespace SmartChest.Catalog
 
         private static readonly HashSet<string> MetalItems = Set(
             "Copper", "Tin", "Bronze", "Iron", "Silver", "BlackMetal", "Flametal", "FlametalNew",
-            "Ironpit", "IronNails", "BronzeNails", "Eitr");
+            "FlametalOreNew", "IronNails", "BronzeNails", "Eitr");
 
         private static readonly HashSet<string> RawIngredientItems = Set(
             "RawMeat", "DeerMeat", "NeckTail", "FishRaw", "WolfMeat", "LoxMeat", "SerpentMeat",
@@ -65,7 +67,17 @@ namespace SmartChest.Catalog
             "Entrails", "Bloodbag", "Barley", "BarleyFlour", "Flax", "Ooze", "Thistle", "Dandelion",
             "Sap", "RoyalJelly", "ChickenEgg", "Fiddleheadfern", "Vineberry", "MushroomSmokePuff",
             "Carrot", "Turnip", "Onion", "MushroomYellow", "MushroomBlue", "MushroomJotunPuffs",
-            "MushroomMagecap", "Honey", "Raspberry", "Blueberries", "Cloudberry");
+            "MushroomMagecap", "Honey", "Raspberry", "Blueberries", "Cloudberry", "MushroomBzerker",
+            "FreshSeaweed", "CuredSquirrelHamstring", "AsksvinEgg", "VoltureEgg");
+
+        private static readonly HashSet<string> ValuableItems = Set(
+            "Coins", "Amber", "AmberPearl", "Ruby", "SilverNecklace", "CrownJewel", "AncientCoin", "Gold",
+            "GemstoneBlue", "GemstoneGreen", "GemstoneRed", "AncientGemstoneBlack", "AncientGemstoneGreen",
+            "AncientGemstoneOrange", "AncientGemstonePurple");
+
+        /// <summary>Consommables à effet qui ne sont ni des hydromels ni de la nourriture.</summary>
+        private static readonly HashSet<string> NotMeads = Set(
+            "Pukeberries", "RottenMeat", "RottingElkMeat_TW", "MushroomBzerker");
 
         private static readonly HashSet<string> SeedItems = Set(
             "CarrotSeeds", "TurnipSeeds", "OnionSeeds", "BeechSeeds", "BirchSeeds", "Acorn",
@@ -98,7 +110,16 @@ namespace SmartChest.Catalog
             if (WoodStoneItems.Contains(prefab)) result.Add(WoodStone);
             if (MetalItems.Contains(prefab) || prefab.EndsWith("Ore") || prefab.EndsWith("Scrap")) result.Add(OreMetal);
             if (SeedItems.Contains(prefab) || prefab.EndsWith("Seeds") || prefab.StartsWith("Sapling")) result.Add(Seeds);
-            if (RawIngredientItems.Contains(prefab)) result.Add(RawIngredients);
+            if (RawIngredientItems.Contains(prefab)
+                || prefab.EndsWith("Uncooked") && !IsGearMold(prefab)
+                || prefab.EndsWith("Dough") || prefab.EndsWith("Flour")
+                || prefab.StartsWith("Spice") || prefab.StartsWith("Feast") && prefab.EndsWith("_Material"))
+                result.Add(RawIngredients);
+            // Bases à mettre dans le fermenteur
+            if (prefab.StartsWith("MeadBase") || prefab.StartsWith("HoneyMeadBase") || prefab == "BarleyWineBase" || prefab.EndsWith("Meadbase"))
+                result.Add(Meads);
+            // Pierres précieuses (vanilla + mods qui suffixent _TW : Amethyst_TW, Diamond_TW...)
+            if (ValuableItems.Contains(prefab) || IsModGem(prefab)) result.Add(Valuables);
 
             switch (type)
             {
@@ -138,23 +159,45 @@ namespace SmartChest.Catalog
                         result.Add(Weapons);
                     break;
                 case "Consumable":
-                    if (prefab.StartsWith("Mead") || prefab.StartsWith("BarleyWine") || (!isFood && shared.m_consumeStatusEffect != null))
+                    if (NotMeads.Contains(prefab))
+                    {
+                        if (result.Count == 0) result.Add(Misc);
+                    }
+                    else if (prefab.StartsWith("Mead") || prefab.StartsWith("BarleyWine") || (!isFood && shared.m_consumeStatusEffect != null))
                         result.Add(Meads);
                     else if (isFood)
                         result.Add(Food);
                     break;
                 case "Material":
-                    // Poissons attrapés (Fish1, Fish2...) et appâts (FishingBait...)
-                    if (prefab.StartsWith("Fish") && prefab != "FishRaw" && prefab != "FishCooked")
+                    // Appâts de pêche ; les poissons attrapés ont leur propre type "Fish"
+                    if (prefab.StartsWith("FishingBait"))
                         result.Add(Fish);
+                    // Viande crue, plats crus... : leurs stats de nourriture ne servent à rien, c'est un ingrédient
+                    else if (isFood && !result.Contains(RawIngredients))
+                        result.Add(RawIngredients);
                     else if (result.Count == 0)
                         result.Add(Materials);
                     break;
             }
 
-            if (isFood && !result.Contains(Food) && !result.Contains(Meads)) result.Add(Food);
+            // Nourriture mangeable telle quelle (pas les matériaux crus)
+            if (isFood && type != "Material" && !result.Contains(Food) && !result.Contains(Meads)) result.Add(Food);
             if (result.Count == 0) result.Add(Misc);
             return result;
+        }
+
+        /// <summary>Armes/armures « Uncooked » d'un mod de moules (ArmorGold...Uncooked) : ce ne sont pas des aliments.</summary>
+        private static bool IsGearMold(string prefab) =>
+            prefab.Contains("Gold") || prefab.Contains("Mold") || prefab.StartsWith("Staff") || prefab.StartsWith("SmallParts");
+
+        private static readonly string[] GemNames =
+            { "Amethyst", "Diamond", "Emerald", "Onyx", "Sapphire", "Topaz", "DarkCrystal" };
+
+        private static bool IsModGem(string prefab)
+        {
+            foreach (string g in GemNames)
+                if (prefab == g || prefab == g + "_TW") return true;
+            return false;
         }
 
         private static HashSet<string> Set(params string[] items) =>

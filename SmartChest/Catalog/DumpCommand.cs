@@ -31,6 +31,8 @@ namespace SmartChest.Catalog
                 if (go == null) continue;
                 ItemDrop drop = go.GetComponent<ItemDrop>();
                 if (drop == null || drop.m_itemData?.m_shared == null) continue;
+                // Attaques de monstres (pas d'icône) : jamais dans un inventaire, on les ignore
+                if (drop.m_itemData.m_shared.m_icons == null || drop.m_itemData.m_shared.m_icons.Length == 0) continue;
 
                 ItemDrop.ItemData data = drop.m_itemData.Clone();
                 data.m_dropPrefab = go;
