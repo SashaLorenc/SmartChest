@@ -36,8 +36,6 @@ namespace SmartChest.Chests
         {
             if (c == null) return;
             _all.Add(c);
-            // Étiquette flottante (elle reste invisible tant que le coffre n'a pas de catégorie)
-            if (c.GetComponent<SmartChest.UI.ChestLabel>() == null) c.gameObject.AddComponent<SmartChest.UI.ChestLabel>();
             Inventory inv = c.GetInventory();
             if (inv != null) _byInventory[inv] = c;
         }

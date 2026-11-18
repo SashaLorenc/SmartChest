@@ -154,7 +154,7 @@ namespace SmartChest.Storing
             if (Plugin.FullChestAlert.Value)
                 foreach (Target t in fullChests)
                     player.Message(MessageHud.MessageType.TopLeft,
-                        string.Format(Localization.instance.Localize("$smartchest_msg_full"), ChestLabel.Describe(t.Container, false)));
+                        string.Format(Localization.instance.Localize("$smartchest_msg_full"), ChestDescription.Describe(t.Container, false)));
         }
 
         private static bool CanStore(ItemDrop.ItemData item)
