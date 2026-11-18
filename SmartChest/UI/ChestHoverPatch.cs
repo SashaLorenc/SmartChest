@@ -12,17 +12,9 @@ namespace SmartChest.UI
         private static void Postfix(Container __instance, ref string __result)
         {
             if (__result == null) return;
-            var cats = ChestCategories.Get(__instance);
-            if (cats.Count == 0) return;
-
-            string list = string.Join(", ", cats
-                .Select(CatalogManager.GetCategory)
-                .Where(c => c != null)
-                .Select(c => $"<color=#{c.Color}>{c.DisplayName}</color>"));
-            if (ChestCategories.GetMode(__instance) == ChestMode.Overflow)
-                list += " <color=#AAAAAA>(" + Localization.instance.Localize("$smartchest_mode_overflow") + ")</color>";
-
-            __result += "\n" + list;
+            if (!ChestCategories.IsSmart(__instance)) return;
+            string desc = ChestLabel.Describe(__instance, true);
+            if (desc.Length > 0) __result += "\n" + desc;
         }
     }
 }

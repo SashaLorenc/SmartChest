@@ -61,54 +61,19 @@ namespace SmartChest.UI
 
         private static void CreateButtons(InventoryGui gui)
         {
-            ButtonPlacement place = Plugin.ButtonsPlacement.Value;
-            bool vertical = place == ButtonPlacement.Gauche || place == ButtonPlacement.Droite;
-            float w = Plugin.ButtonsWidth.Value;
-            const float h = 30f;
-            const float gap = 6f;
-
-            _buttons = new GameObject("SmartChestButtons", typeof(RectTransform));
-            var rt = (RectTransform)_buttons.transform;
-            rt.SetParent(gui.m_container, false);
-            rt.sizeDelta = vertical ? new Vector2(w, h * 2 + gap) : new Vector2(w * 2 + gap, h);
-
-            var offset = new Vector2(Plugin.ButtonsOffsetX.Value, Plugin.ButtonsOffsetY.Value);
-            switch (place)
-            {
-                case ButtonPlacement.Dessus:
-                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
-                    rt.pivot = new Vector2(0f, 0f);
-                    rt.anchoredPosition = new Vector2(0f, gap) + offset;
-                    break;
-                case ButtonPlacement.Dessous:
-                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 0f);
-                    rt.pivot = new Vector2(0f, 1f);
-                    rt.anchoredPosition = new Vector2(0f, -gap) + offset;
-                    break;
-                case ButtonPlacement.Gauche:
-                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
-                    rt.pivot = new Vector2(1f, 1f);
-                    rt.anchoredPosition = new Vector2(-gap, 0f) + offset;
-                    break;
-                default: // Droite
-                    rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
-                    rt.pivot = new Vector2(0f, 1f);
-                    rt.anchoredPosition = new Vector2(gap, 0f) + offset;
-                    break;
-            }
-
-            float x2 = vertical ? 0f : w + gap;
-            float y2 = vertical ? h + gap : 0f;
-
-            UiKit.AddButton(_buttons.transform, "$smartchest_categories", 0f, 0f, w, h, () =>
-            {
-                if (IsOpen) Close();
-                else Open(InventoryGui.instance.m_currentContainer);
-            });
-            UiKit.AddButton(_buttons.transform, "$smartchest_store_here", x2, y2, w, h, () =>
-            {
-                StoreService.StoreInto(Player.m_localPlayer, InventoryGui.instance.m_currentContainer);
-            });
+            _buttons = UiKit.CreateButtonBar(gui.m_container, "SmartChestButtons", Plugin.ButtonsPlacement.Value,
+                new Vector2(Plugin.ButtonsOffsetX.Value, Plugin.ButtonsOffsetY.Value), Plugin.ButtonsWidth.Value,
+                new[] { "$smartchest_categories", "$smartchest_store_here", "$smartchest_sort" },
+                new UnityEngine.Events.UnityAction[]
+                {
+                    () =>
+                    {
+                        if (IsOpen) Close();
+                        else Open(InventoryGui.instance.m_currentContainer);
+                    },
+                    () => StoreService.StoreInto(Player.m_localPlayer, InventoryGui.instance.m_currentContainer),
+                    () => SortService.SortChest(Player.m_localPlayer, InventoryGui.instance.m_currentContainer),
+                });
         }
 
         // ---------- Panneau de catégories ----------
@@ -118,6 +83,7 @@ namespace SmartChest.UI
             Close();
             ItemEditorPanel.Close();
             CategoryManagerPanel.Close();
+            SearchPanel.Close();
             if (container == null) return;
             _panelFor = container;
 
@@ -127,7 +93,7 @@ namespace SmartChest.UI
                 if (!c.Hidden) visible.Add(c);
 
             int rows = (visible.Count + 1) / 2;
-            float height = 70f + rows * RowHeight + 150f;
+            float height = 70f + rows * RowHeight + 200f;
 
             _panel = UiKit.CreatePanel(PanelWidth, height);
 
@@ -167,8 +133,24 @@ namespace SmartChest.UI
             });
             UiKit.AddButton(_panel.transform, "$smartchest_close", PanelWidth - 25f - 120f, bottom, 120f, 34f, Close);
 
+            // Priorité : entre deux coffres de la même catégorie, le plus prioritaire est rempli d'abord
+            float yPrio = bottom + 48f;
+            GameObject prioBtn = null;
+            prioBtn = UiKit.AddButton(_panel.transform, PriorityLabel(ChestCategories.GetPriority(container)), 25f, yPrio, 260f, 34f, () => { });
+            prioBtn.GetComponent<Button>().interactable = false;
+            UiKit.AddButton(_panel.transform, "-", 295f, yPrio, 45f, 34f, () =>
+            {
+                ChestCategories.SetPriority(_panelFor, ChestCategories.GetPriority(_panelFor) - 1);
+                UiKit.SetButtonText(prioBtn, PriorityLabel(ChestCategories.GetPriority(_panelFor)));
+            });
+            UiKit.AddButton(_panel.transform, "+", 345f, yPrio, 45f, 34f, () =>
+            {
+                ChestCategories.SetPriority(_panelFor, ChestCategories.GetPriority(_panelFor) + 1);
+                UiKit.SetButtonText(prioBtn, PriorityLabel(ChestCategories.GetPriority(_panelFor)));
+            });
+
             // Nouvelle catégorie : nom + bouton Ajouter
-            float yNew = bottom + 50f;
+            float yNew = yPrio + 48f;
             _nameInput = UiKit.AddInput(_panel.transform, "", Localization.instance.Localize("$smartchest_new_category_placeholder"), 25f, yNew, 330f, 34f);
 
             UiKit.AddButton(_panel.transform, "$smartchest_new_category", 365f, yNew, 200f, 34f, AddCategoryFromInput);
@@ -195,6 +177,9 @@ namespace SmartChest.UI
             Open(_panelFor);
         }
 
+        private static string PriorityLabel(int prio) =>
+            Localization.instance.Localize("$smartchest_priority") + " : " + prio;
+
         private static string ModeLabel(ChestMode mode) =>
             Localization.instance.Localize("$smartchest_mode") + " : " +
             Localization.instance.Localize(mode == ChestMode.Strict ? "$smartchest_mode_strict" : "$smartchest_mode_overflow");
@@ -209,6 +194,7 @@ namespace SmartChest.UI
         private static void Postfix(InventoryGui __instance)
         {
             ChestPanel.OnInventoryUpdate(__instance);
+            InventoryButtons.OnInventoryUpdate(__instance);
             ItemEditorPanel.OnInventoryUpdate(__instance);
         }
     }
@@ -221,6 +207,7 @@ namespace SmartChest.UI
             ChestPanel.Close();
             ItemEditorPanel.Close();
             CategoryManagerPanel.Close();
+            SearchPanel.Close();
         }
     }
 }

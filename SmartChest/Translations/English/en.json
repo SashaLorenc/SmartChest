@@ -3,7 +3,7 @@
   "smartchest_store_by_category": "Store by category",
   "smartchest_new_category": "+ New category",
   "smartchest_mode_strict": "Strict",
-  "smartchest_mode_overflow": "Overflow",
+  "smartchest_mode_overflow": "Catch-all",
   "smartchest_reset_default": "Reset to default",
   "smartchest_stored_summary": "{0} items stored in {1} chests",
   "smartchest_tooltip_categories": "Categories",
@@ -39,5 +39,18 @@
   "smartchest_delete": "Delete",
   "smartchest_confirm": "Confirm?",
   "smartchest_back": "Back",
-  "smartchest_tooltip_edit_hint": "edit"
+  "smartchest_tooltip_edit_hint": "edit",
+  "smartchest_label_rest": "+ the rest",
+  "smartchest_sort": "Sort",
+  "smartchest_search": "Search",
+  "smartchest_search_title": "Search an item in nearby chests",
+  "smartchest_search_placeholder": "Item name (e.g. wood)",
+  "smartchest_search_go": "Search",
+  "smartchest_search_found": "\"{0}\" found in {1} chest(s)",
+  "smartchest_search_none": "\"{0}\" not found in nearby chests",
+  "smartchest_priority": "Priority",
+  "smartchest_full": "full",
+  "smartchest_msg_full": "Chest full: {0}",
+  "smartchest_msg_sorted": "Chest sorted",
+  "smartchest_msg_not_owner": "Cannot sort: another player is using this chest"
 }

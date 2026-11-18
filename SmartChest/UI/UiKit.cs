@@ -100,6 +100,56 @@ namespace SmartChest.UI
             return go;
         }
 
+        /// <summary>
+        /// Rangée de boutons collée à un côté d'un panneau du jeu (dessus, dessous, gauche, droite).
+        /// En haut / en bas les boutons sont côte à côte, sur les côtés ils sont empilés.
+        /// </summary>
+        internal static GameObject CreateButtonBar(Transform parent, string name, ButtonPlacement place, Vector2 offset,
+            float w, string[] labels, UnityEngine.Events.UnityAction[] actions)
+        {
+            bool vertical = place == ButtonPlacement.Gauche || place == ButtonPlacement.Droite;
+            const float h = 30f;
+            const float gap = 6f;
+            int n = labels.Length;
+
+            var bar = new GameObject(name, typeof(RectTransform));
+            var rt = (RectTransform)bar.transform;
+            rt.SetParent(parent, false);
+            rt.sizeDelta = vertical ? new Vector2(w, n * h + (n - 1) * gap) : new Vector2(n * w + (n - 1) * gap, h);
+
+            switch (place)
+            {
+                case ButtonPlacement.Dessus:
+                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+                    rt.pivot = new Vector2(0f, 0f);
+                    rt.anchoredPosition = new Vector2(0f, gap) + offset;
+                    break;
+                case ButtonPlacement.Dessous:
+                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 0f);
+                    rt.pivot = new Vector2(0f, 1f);
+                    rt.anchoredPosition = new Vector2(0f, -gap) + offset;
+                    break;
+                case ButtonPlacement.Gauche:
+                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+                    rt.pivot = new Vector2(1f, 1f);
+                    rt.anchoredPosition = new Vector2(-gap, 0f) + offset;
+                    break;
+                default: // Droite
+                    rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
+                    rt.pivot = new Vector2(0f, 1f);
+                    rt.anchoredPosition = new Vector2(gap, 0f) + offset;
+                    break;
+            }
+
+            for (int i = 0; i < n; i++)
+            {
+                float x = vertical ? 0f : i * (w + gap);
+                float y = vertical ? i * (h + gap) : 0f;
+                AddButton(bar.transform, labels[i], x, y, w, h, actions[i]);
+            }
+            return bar;
+        }
+
         internal static void SetButtonText(GameObject button, string text)
         {
             if (button == null) return;

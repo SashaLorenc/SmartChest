@@ -93,7 +93,8 @@ namespace SmartChest.Catalog
                 cats = DefaultRules.Compute(item);
                 _defaultCache[prefab] = cats;
             }
-            return cats;
+            // Copie : l'appelant peut modifier la liste sans abîmer le cache
+            return new List<string>(cats);
         }
 
         public static bool IsOverridden(ItemDrop.ItemData item) => _overrides.ContainsKey(GetPrefabName(item));

@@ -121,3 +121,15 @@ Désactivable dans la config : `[Compatibilite] QuickStackStore = false`.
    - **Masquer / Afficher** pour les catégories par défaut, **Supprimer** (deux clics) pour les tiennes.
    **Retour** revient au panneau du coffre.
 4. Tout est enregistré dans `BepInEx/config/SmartChest/catalog.json`.
+
+## Tester l'étape 5 (nouvelles fonctions)
+
+`git pull`, recompile, lance le jeu. Les nouveaux réglages apparaissent dans `BepInEx/config/sashalorenc.SmartChest.cfg` après le premier lancement.
+
+1. **Bouton Ranger par catégorie** : ouvre l'inventaire (Tab). Au-dessus de ton inventaire, deux boutons : **Ranger par catégorie** (même effet que la touche L) et **Rechercher**. S'ils gênent : `[Interface] PositionBoutonsInventaire` (Dessus, Dessous, Gauche, Droite) et `InventaireDecalageX / Y`.
+2. **Étiquettes** : approche-toi (moins de 8 m) d'un coffre catégorisé : ses catégories flottent au-dessus, en couleur, avec **PLEIN** en rouge s'il n'a plus de place. Réglages `[Etiquettes]` : `Afficher` (true/false), `Distance`, `Hauteur`, `Taille`.
+3. **Recherche** : bouton **Rechercher**, tape un nom (ex. « bois »), Entrée ou **Chercher**. Les coffres à moins de 30 m qui en contiennent brillent pendant 15 s et affichent « Bois x50 » au-dessus. Ferme l'inventaire pour mieux les voir. Réglages `[Recherche] Rayon / Duree`.
+4. **Coffre « reçoit le reste »** : ouvre un coffre sans cocher de catégorie, passe le **Mode** sur **Reçoit le reste**. À la touche L, il reçoit tout ce qui n'a pas trouvé de coffre de sa catégorie. Attention, sans catégorie dédiée il prend vraiment tout (sauf la barre 1 à 8 et les objets équipés).
+5. **Priorités** : dans le panneau **Catégories** d'un coffre, **Priorité** avec **-** et **+** (0 à 9). Deux coffres « Bois et pierre » : celui qui a la plus haute priorité se remplit d'abord, l'autre prend la suite quand il est plein.
+6. **Coffre plein** : remplis un coffre catégorisé puis appuie sur L avec encore des objets de sa catégorie : un message « Coffre plein : … » apparaît en haut à gauche. Désactivable : `[Rangement] AlerteCoffrePlein = false`.
+7. **Trier** : nouveau bouton **Trier** à côté de **Ranger ici** : le contenu du coffre est regroupé par catégorie puis par nom, et les piles incomplètes sont fusionnées.

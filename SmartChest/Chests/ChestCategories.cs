@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using SmartChest.Catalog;
+using UnityEngine;
 
 namespace SmartChest.Chests
 {
@@ -20,6 +21,8 @@ namespace SmartChest.Chests
     {
         public const string KeyCategories = "SmartChest_Cats";
         public const string KeyMode = "SmartChest_Mode";
+        public const string KeyPriority = "SmartChest_Prio";
+        public const int MaxPriority = 9;
 
         private static ZDO GetZdo(Container container)
         {
@@ -46,6 +49,34 @@ namespace SmartChest.Chests
         {
             ZDO zdo = GetZdo(container);
             return zdo == null ? ChestMode.Strict : (ChestMode)zdo.GetInt(KeyMode, 0);
+        }
+
+        /// <summary>Coffre « reçoit le reste » sans catégorie : il prend tout ce qui n'a pas trouvé d'autre coffre.</summary>
+        public static bool IsCatchAll(Container container) => GetMode(container) == ChestMode.Overflow && !HasAny(container);
+
+        /// <summary>Le coffre participe au rangement : il a des catégories, ou il reçoit le reste.</summary>
+        public static bool IsSmart(Container container) => HasAny(container) || GetMode(container) == ChestMode.Overflow;
+
+        /// <summary>Priorité de 0 à 9 : entre deux coffres de la même catégorie, le plus prioritaire est rempli d'abord.</summary>
+        public static int GetPriority(Container container)
+        {
+            ZDO zdo = GetZdo(container);
+            return zdo == null ? 0 : Mathf.Clamp(zdo.GetInt(KeyPriority, 0), 0, MaxPriority);
+        }
+
+        public static bool SetPriority(Container container, int priority)
+        {
+            ZDO zdo = GetWritableZdo(container);
+            if (zdo == null) return false;
+            zdo.Set(KeyPriority, Mathf.Clamp(priority, 0, MaxPriority));
+            return true;
+        }
+
+        /// <summary>Plus aucune case libre (une case = un objet dans la liste de l'inventaire).</summary>
+        public static bool IsFull(Container container)
+        {
+            Inventory inv = container != null ? container.GetInventory() : null;
+            return inv != null && inv.m_inventory.Count >= inv.GetWidth() * inv.GetHeight();
         }
 
         public static bool Set(Container container, IEnumerable<string> categoryIds)

@@ -3,7 +3,7 @@
   "smartchest_store_by_category": "Ranger par catégorie",
   "smartchest_new_category": "+ Nouvelle catégorie",
   "smartchest_mode_strict": "Strict",
-  "smartchest_mode_overflow": "Trop-plein",
+  "smartchest_mode_overflow": "Reçoit le reste",
   "smartchest_reset_default": "Rétablir le défaut",
   "smartchest_stored_summary": "{0} objets rangés dans {1} coffres",
   "smartchest_tooltip_categories": "Catégories",
@@ -39,5 +39,18 @@
   "smartchest_delete": "Supprimer",
   "smartchest_confirm": "Confirmer ?",
   "smartchest_back": "Retour",
-  "smartchest_tooltip_edit_hint": "modifier"
+  "smartchest_tooltip_edit_hint": "modifier",
+  "smartchest_label_rest": "+ le reste",
+  "smartchest_sort": "Trier",
+  "smartchest_search": "Rechercher",
+  "smartchest_search_title": "Rechercher un objet dans les coffres proches",
+  "smartchest_search_placeholder": "Nom de l'objet (ex. : bois)",
+  "smartchest_search_go": "Chercher",
+  "smartchest_search_found": "« {0} » trouvé dans {1} coffre(s)",
+  "smartchest_search_none": "« {0} » introuvable dans les coffres proches",
+  "smartchest_priority": "Priorité",
+  "smartchest_full": "plein",
+  "smartchest_msg_full": "Coffre plein : {0}",
+  "smartchest_msg_sorted": "Coffre trié",
+  "smartchest_msg_not_owner": "Impossible de trier : un autre joueur utilise ce coffre"
 }

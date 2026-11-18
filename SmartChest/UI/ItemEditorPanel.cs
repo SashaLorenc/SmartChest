@@ -77,6 +77,7 @@ namespace SmartChest.UI
         {
             Close();
             ChestPanel.Close();
+            SearchPanel.Close();
             CategoryManagerPanel.Close();
             if (item == null) return;
             _item = item;

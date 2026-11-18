@@ -45,6 +45,16 @@ namespace SmartChest
         public static ConfigEntry<float> ButtonsOffsetX;
         public static ConfigEntry<float> ButtonsOffsetY;
         public static ConfigEntry<float> ButtonsWidth;
+        public static ConfigEntry<ButtonPlacement> InventoryButtonsPlacement;
+        public static ConfigEntry<float> InventoryButtonsOffsetX;
+        public static ConfigEntry<float> InventoryButtonsOffsetY;
+        public static ConfigEntry<bool> ShowLabels;
+        public static ConfigEntry<float> LabelDistance;
+        public static ConfigEntry<float> LabelHeight;
+        public static ConfigEntry<float> LabelScale;
+        public static ConfigEntry<float> SearchRadius;
+        public static ConfigEntry<float> SearchDuration;
+        public static ConfigEntry<bool> FullChestAlert;
 
         private Harmony _harmony;
 
@@ -114,7 +124,34 @@ namespace SmartChest
             ButtonsPlacement.SettingChanged += (_, __) => ChestPanel.ResetButtons();
             ButtonsOffsetX.SettingChanged += (_, __) => ChestPanel.ResetButtons();
             ButtonsOffsetY.SettingChanged += (_, __) => ChestPanel.ResetButtons();
-            ButtonsWidth.SettingChanged += (_, __) => ChestPanel.ResetButtons();
+            ButtonsWidth.SettingChanged += (_, __) => { ChestPanel.ResetButtons(); InventoryButtons.Reset(); };
+
+            InventoryButtonsPlacement = Config.Bind("Interface", "PositionBoutonsInventaire", ButtonPlacement.Dessus,
+                "Où placer les boutons Ranger par catégorie / Rechercher autour de l'inventaire du joueur : Dessus, Dessous, Gauche, Droite.");
+            InventoryButtonsOffsetX = Config.Bind("Interface", "InventaireDecalageX", 0f,
+                "Décalage horizontal des boutons de l'inventaire en pixels (positif = vers la droite).");
+            InventoryButtonsOffsetY = Config.Bind("Interface", "InventaireDecalageY", 0f,
+                "Décalage vertical des boutons de l'inventaire en pixels (positif = vers le haut).");
+            InventoryButtonsPlacement.SettingChanged += (_, __) => InventoryButtons.Reset();
+            InventoryButtonsOffsetX.SettingChanged += (_, __) => InventoryButtons.Reset();
+            InventoryButtonsOffsetY.SettingChanged += (_, __) => InventoryButtons.Reset();
+
+            ShowLabels = Config.Bind("Etiquettes", "Afficher", true,
+                "Affiche les catégories au-dessus des coffres catégorisés.");
+            LabelDistance = Config.Bind("Etiquettes", "Distance", 8f,
+                new ConfigDescription("Distance maximale (m) à laquelle les étiquettes sont visibles.", new AcceptableValueRange<float>(2f, 30f)));
+            LabelHeight = Config.Bind("Etiquettes", "Hauteur", 1.3f,
+                new ConfigDescription("Hauteur de l'étiquette au-dessus du pied du coffre (m).", new AcceptableValueRange<float>(0.3f, 4f)));
+            LabelScale = Config.Bind("Etiquettes", "Taille", 1f,
+                new ConfigDescription("Taille du texte des étiquettes.", new AcceptableValueRange<float>(0.3f, 3f)));
+
+            SearchRadius = Config.Bind("Recherche", "Rayon", 30f,
+                new ConfigDescription("Distance maximale (m) des coffres fouillés par la recherche.", new AcceptableValueRange<float>(5f, 100f)));
+            SearchDuration = Config.Bind("Recherche", "Duree", 15f,
+                new ConfigDescription("Durée (secondes) pendant laquelle les coffres trouvés brillent.", new AcceptableValueRange<float>(3f, 60f)));
+
+            FullChestAlert = Config.Bind("Rangement", "AlerteCoffrePlein", true,
+                "Prévient (en haut à gauche) quand un coffre catégorisé est plein et que des objets de sa catégorie n'ont pas pu être rangés.");
 
             QuickStackIntegration = Config.Bind("Compatibilite", "QuickStackStore", true,
                 "Avec Quick Stack Store Sort Trash Restock : le stockage rapide envoie aussi les objets vers les coffres de leur catégorie, et Tout stocker respecte les coffres en mode strict.");

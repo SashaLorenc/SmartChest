@@ -26,6 +26,7 @@ namespace SmartChest.UI
         {
             Close();
             ChestPanel.Close();
+            SearchPanel.Close();
             ItemEditorPanel.Close();
             _returnTo = returnTo;
 

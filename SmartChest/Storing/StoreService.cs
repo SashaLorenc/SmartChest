@@ -3,6 +3,7 @@ using System.Linq;
 using SmartChest.Catalog;
 using SmartChest.Chests;
 using SmartChest.Compat;
+using SmartChest.UI;
 using UnityEngine;
 
 namespace SmartChest.Storing
@@ -16,6 +17,7 @@ namespace SmartChest.Storing
             public Inventory Inventory;
             public HashSet<string> Categories;
             public ChestMode Mode;
+            public int Priority;
             public float Distance;
             /// <summary>Coffre modifié à distance (pas celui que le joueur a ouvert).</summary>
             public bool Remote;
@@ -60,7 +62,9 @@ namespace SmartChest.Storing
             if (inv == null || inv == player.GetInventory()) return null;
 
             List<string> cats = ChestCategories.Get(c);
-            if (cats.Count == 0) return null;
+            ChestMode mode = ChestCategories.GetMode(c);
+            // Sans catégorie, seul un coffre « reçoit le reste » participe
+            if (cats.Count == 0 && mode != ChestMode.Overflow) return null;
 
             if (!isOpenByMe)
             {
@@ -73,7 +77,8 @@ namespace SmartChest.Storing
                 Container = c,
                 Inventory = inv,
                 Categories = new HashSet<string>(cats),
-                Mode = ChestCategories.GetMode(c),
+                Mode = mode,
+                Priority = ChestCategories.GetPriority(c),
                 Distance = distance,
                 Remote = !isOpenByMe,
             };
@@ -91,6 +96,8 @@ namespace SmartChest.Storing
             int movedTotal = 0;
             var usedChests = new HashSet<Container>();
             var claimed = new HashSet<Container>();
+            // Coffres catégorisés qui n'ont pas pu tout prendre faute de place
+            var fullChests = new List<Target>();
 
             // Copie de la liste : on modifie l'inventaire pendant la boucle
             // On lit la liste brute de la grille principale (comme Quick Stack Store) : avec Equipment and
@@ -103,16 +110,20 @@ namespace SmartChest.Storing
 
                 List<string> itemCats = CatalogManager.GetItemCategories(item);
 
-                // 1) coffres qui partagent une catégorie avec l'objet ; ceux qui contiennent déjà cet objet d'abord, puis les plus proches
-                IEnumerable<Target> matching = targets
+                // 1) coffres qui partagent une catégorie avec l'objet : priorité la plus haute d'abord,
+                //    puis ceux qui contiennent déjà cet objet, puis les plus proches
+                List<Target> matching = targets
                     .Where(t => itemCats.Any(t.Categories.Contains))
-                    .OrderByDescending(t => Contains(t.Inventory, item))
-                    .ThenBy(t => t.Distance);
+                    .OrderByDescending(t => t.Priority)
+                    .ThenByDescending(t => Contains(t.Inventory, item))
+                    .ThenBy(t => t.Distance)
+                    .ToList();
 
-                // 2) puis les coffres trop-plein, si l'objet n'a pas trouvé de place
+                // 2) puis les coffres « reçoit le reste », si l'objet n'a pas trouvé de place
                 IEnumerable<Target> overflow = targets
                     .Where(t => t.Mode == ChestMode.Overflow && !itemCats.Any(t.Categories.Contains))
-                    .OrderBy(t => t.Distance);
+                    .OrderByDescending(t => t.Priority)
+                    .ThenBy(t => t.Distance);
 
                 foreach (Target t in matching.Concat(overflow))
                 {
@@ -124,6 +135,11 @@ namespace SmartChest.Storing
                     }
                     if (!playerInv.ContainsItem(item)) break;
                 }
+
+                // L'objet reste dans l'inventaire alors qu'il avait des coffres de sa catégorie : ils sont pleins
+                if (playerInv.ContainsItem(item))
+                    foreach (Target t in matching)
+                        if (!fullChests.Contains(t) && ChestCategories.IsFull(t.Container)) fullChests.Add(t);
             }
 
             // Libère les coffres modifiés à distance
@@ -134,6 +150,11 @@ namespace SmartChest.Storing
                 ? Localization.instance.Localize("$smartchest_msg_nothing")
                 : string.Format(Localization.instance.Localize("$smartchest_stored_summary"), movedTotal, usedChests.Count);
             player.Message(MessageHud.MessageType.Center, msg);
+
+            if (Plugin.FullChestAlert.Value)
+                foreach (Target t in fullChests)
+                    player.Message(MessageHud.MessageType.TopLeft,
+                        string.Format(Localization.instance.Localize("$smartchest_msg_full"), ChestLabel.Describe(t.Container, false)));
         }
 
         private static bool CanStore(ItemDrop.ItemData item)
