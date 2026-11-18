@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Jotunn.Managers;
 using SmartChest.Storing;
 using UnityEngine;
@@ -18,10 +19,7 @@ namespace SmartChest.UI
 
         public static void Open()
         {
-            Close();
-            ChestPanel.Close();
-            ItemEditorPanel.Close();
-            CategoryManagerPanel.Close();
+            Panels.CloseAll();
 
             _panel = UiKit.CreatePanel(Width, 170f);
             UiKit.AddText(_panel.transform, Localization.instance.Localize("$smartchest_search_title"), 20f, 15f, Width - 40f, 30f, 20,
@@ -45,7 +43,20 @@ namespace SmartChest.UI
         {
             if (_input == null) return;
             _lastQuery = _input.text.Trim();
-            ChestSearch.Run(Player.m_localPlayer, _lastQuery);
+            Player player = Player.m_localPlayer;
+            if (player == null || _lastQuery.Length == 0) return;
+
+            List<ChestSearch.Hit> hits = ChestSearch.Find(player.transform.position, Plugin.SearchRadius.Value, _lastQuery);
+
+            ChestHighlight.ClearAll();
+            float duration = Plugin.SearchDuration.Value;
+            foreach (ChestSearch.Hit hit in hits)
+                ChestHighlight.Flash(hit.Container, duration, $"{hit.ItemName} x{hit.Count}");
+
+            string msg = hits.Count == 0
+                ? string.Format(Localization.instance.Localize("$smartchest_search_none"), _lastQuery)
+                : string.Format(Localization.instance.Localize("$smartchest_search_found"), _lastQuery, hits.Count);
+            player.Message(MessageHud.MessageType.Center, msg);
         }
 
         public static void Close()

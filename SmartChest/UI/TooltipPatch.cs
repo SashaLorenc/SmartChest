@@ -38,10 +38,7 @@ namespace SmartChest.UI
 
             var sb = new StringBuilder(__result);
             sb.Append("\n").Append(Localization.instance.Localize("$smartchest_tooltip_categories")).Append(" : ");
-            sb.Append(string.Join(", ", ids
-                .Select(CatalogManager.GetCategory)
-                .Where(c => c != null)
-                .Select(c => $"<color=#{c.Color}>{c.DisplayName}</color>")));
+            sb.Append(CatalogManager.ColoredNames(ids));
             if (CatalogManager.IsOverridden(__0)) sb.Append(" *");
             sb.Append($"\n<color=#AAAAAA>[{Plugin.EditItemKey.Value}] {Localization.instance.Localize("$smartchest_tooltip_edit_hint")}</color>");
             sb.Append(Marker);

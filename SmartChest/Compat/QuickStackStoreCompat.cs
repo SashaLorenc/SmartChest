@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using SmartChest.Catalog;
@@ -65,14 +64,25 @@ namespace SmartChest.Compat
             }
         }
 
+        // La config du joueur est relue une fois par image (et non pour chaque objet)
+        private static object _cachedConfig;
+        private static long _cachedPlayerId;
+        private static int _cachedFrame = -1;
+
         /// <summary>Vrai si l'objet est en favori dans Quick Stack Store (il ne doit jamais bouger).</summary>
         public static bool IsFavorited(Player player, ItemDrop.ItemData item)
         {
             if (_getPlayerConfig == null || _isFavorited == null || player == null) return false;
             try
             {
-                object config = _getPlayerConfig.Invoke(null, new object[] { player.GetPlayerID() });
-                return config != null && (bool)_isFavorited.Invoke(config, new object[] { item });
+                long id = player.GetPlayerID();
+                if (_cachedFrame != UnityEngine.Time.frameCount || _cachedPlayerId != id)
+                {
+                    _cachedConfig = _getPlayerConfig.Invoke(null, new object[] { id });
+                    _cachedPlayerId = id;
+                    _cachedFrame = UnityEngine.Time.frameCount;
+                }
+                return _cachedConfig != null && (bool)_isFavorited.Invoke(_cachedConfig, new object[] { item });
             }
             catch
             {
@@ -89,7 +99,7 @@ namespace SmartChest.Compat
 
             Container chest = ContainerRegistry.FromInventory(container);
             if (chest == null) return;
-            HashSet<string> chestCats = new HashSet<string>(ChestCategories.Get(chest));
+            var chestCats = new HashSet<string>(ChestCategories.Get(chest));
             if (chestCats.Count == 0) return;
 
             int moved = MoveMatching(nonTrophies, chestCats, playerInventory, container)
@@ -110,7 +120,7 @@ namespace SmartChest.Compat
             for (int i = items.Count - 1; i >= 0; i--)
             {
                 ItemDrop.ItemData item = items[i];
-                if (!CatalogManager.GetItemCategories(item).Any(chestCats.Contains)) continue;
+                if (!CatalogManager.MatchesAny(item, chestCats)) continue;
 
                 if (to.AddItem(item))
                 {
@@ -134,7 +144,7 @@ namespace SmartChest.Compat
             List<string> chestCats = ChestCategories.Get(chest);
             if (chestCats.Count == 0) return;
 
-            if (!CatalogManager.GetItemCategories(item).Any(chestCats.Contains))
+            if (!CatalogManager.MatchesAny(item, chestCats))
                 __result = false;
         }
     }

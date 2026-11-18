@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using Jotunn.Managers;
+using SmartChest.Catalog;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -21,6 +23,31 @@ namespace SmartChest.UI
                 if (es == null || es.currentSelectedGameObject == null) return false;
                 InputField input = es.currentSelectedGameObject.GetComponent<InputField>();
                 return input != null && input.isFocused;
+            }
+        }
+
+        // ---------- Grille de cases à cocher des catégories (panneau du coffre et éditeur d'objet) ----------
+
+        internal const float CategoryGridWidth = 590f;
+        private const float GridRowHeight = 34f;
+        private const float GridColWidth = 270f;
+
+        /// <summary>Hauteur de la grille des catégories visibles (deux colonnes).</summary>
+        internal static float CategoryGridHeight() => (CatalogManager.VisibleCategories().Count + 1) / 2 * GridRowHeight;
+
+        /// <summary>Une case à cocher par catégorie visible, sur deux colonnes, à partir de la hauteur top.</summary>
+        internal static void AddCategoryGrid(Transform parent, float top, ICollection<string> selected, System.Action<string, bool> onToggle)
+        {
+            List<Category> visible = CatalogManager.VisibleCategories();
+            for (int i = 0; i < visible.Count; i++)
+            {
+                Category cat = visible[i];
+                string id = cat.Id;
+                float x = 25f + (i % 2) * GridColWidth;
+                float y = top + (i / 2) * GridRowHeight;
+
+                AddToggle(parent, x, y, selected.Contains(id), on => onToggle(id, on));
+                AddText(parent, $"<color=#{cat.Color}>{cat.DisplayName}</color>", x + 34f, y, GridColWidth - 40f, 28f, 18, Color.white);
             }
         }
 

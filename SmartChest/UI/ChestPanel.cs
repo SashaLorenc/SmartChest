@@ -10,41 +10,35 @@ using UnityEngine.UI;
 namespace SmartChest.UI
 {
     /// <summary>
-    /// Boutons « Catégories » et « Ranger ici » au-dessus du coffre ouvert,
+    /// Boutons « Catégories », « Ranger ici » et « Trier » à côté du coffre ouvert,
     /// et panneau de cases à cocher pour choisir les catégories du coffre.
     /// </summary>
-    /// <summary>Où placer les boutons autour du coffre ouvert (réglable dans la config).</summary>
-    public enum ButtonPlacement
-    {
-        Dessus,
-        Dessous,
-        Gauche,
-        Droite,
-    }
-
     public static class ChestPanel
     {
-        private const float RowHeight = 34f;
-        private const float ColWidth = 270f;
-        private const float PanelWidth = 590f;
+        private const float PanelWidth = UiKit.CategoryGridWidth;
 
         private static GameObject _buttons;
         private static GameObject _panel;
         private static Container _panelFor;
         private static InputField _nameInput;
-
-        /// <summary>Vrai quand le joueur tape dans un de nos champs : on bloque alors les raccourcis du jeu.</summary>
-        public static bool IsTyping => UiKit.IsTyping;
+        private static Container _checkedContainer;
+        private static bool _checkedEligible;
 
         public static bool IsOpen => _panel != null;
 
-        // ---------- Boutons au-dessus du coffre ----------
+        // ---------- Boutons à côté du coffre ----------
 
         internal static void OnInventoryUpdate(InventoryGui gui)
         {
             Container current = gui.IsContainerOpen() ? gui.m_currentContainer : null;
             // Pas de boutons sur les sacs à dos, tombes, tas à objet unique, coffres de donjon...
-            bool show = current != null && Compat.ModCompat.IsEligibleChest(current);
+            // (vérifié une fois par coffre ouvert, pas à chaque image)
+            if (current != _checkedContainer)
+            {
+                _checkedContainer = current;
+                _checkedEligible = current != null && Compat.ModCompat.IsEligibleChest(current);
+            }
+            bool show = current != null && _checkedEligible;
 
             if (show && _buttons == null) CreateButtons(gui);
             if (_buttons != null && _buttons.activeSelf != show) _buttons.SetActive(show);
@@ -80,20 +74,12 @@ namespace SmartChest.UI
 
         public static void Open(Container container)
         {
-            Close();
-            ItemEditorPanel.Close();
-            CategoryManagerPanel.Close();
-            SearchPanel.Close();
+            Panels.CloseAll();
             if (container == null) return;
             _panelFor = container;
 
-            List<string> chestCats = ChestCategories.Get(container);
-            var visible = new List<Category>();
-            foreach (Category c in CatalogManager.Categories)
-                if (!c.Hidden) visible.Add(c);
-
-            int rows = (visible.Count + 1) / 2;
-            float height = 70f + rows * RowHeight + 200f;
+            float gridHeight = UiKit.CategoryGridHeight();
+            float height = 70f + gridHeight + 200f;
 
             _panel = UiKit.CreatePanel(PanelWidth, height);
 
@@ -101,20 +87,9 @@ namespace SmartChest.UI
                     Localization.instance.Localize(container.m_name), 20f, 15f, PanelWidth - 40f, 30f, 22,
                 GUIManager.Instance.ValheimOrange);
 
-            // Cases à cocher, sur deux colonnes
-            for (int i = 0; i < visible.Count; i++)
-            {
-                Category cat = visible[i];
-                float x = 25f + (i % 2) * ColWidth;
-                float y = 60f + (i / 2) * RowHeight;
+            UiKit.AddCategoryGrid(_panel.transform, 60f, ChestCategories.Get(container), (id, on) => ChestCategories.Toggle(_panelFor, id, on));
 
-                string id = cat.Id;
-                UiKit.AddToggle(_panel.transform, x, y, chestCats.Contains(id), on => ChestCategories.Toggle(_panelFor, id, on));
-
-                UiKit.AddText(_panel.transform, $"<color=#{cat.Color}>{cat.DisplayName}</color>", x + 34f, y, ColWidth - 40f, 28f, 18, Color.white);
-            }
-
-            float bottom = 60f + rows * RowHeight + 15f;
+            float bottom = 60f + gridHeight + 15f;
 
             // Mode strict / trop-plein
             GameObject modeBtn = null;
@@ -135,19 +110,10 @@ namespace SmartChest.UI
 
             // Priorité : entre deux coffres de la même catégorie, le plus prioritaire est rempli d'abord
             float yPrio = bottom + 48f;
-            GameObject prioBtn = null;
-            prioBtn = UiKit.AddButton(_panel.transform, PriorityLabel(ChestCategories.GetPriority(container)), 25f, yPrio, 260f, 34f, () => { });
+            GameObject prioBtn = UiKit.AddButton(_panel.transform, PriorityLabel(ChestCategories.GetPriority(container)), 25f, yPrio, 260f, 34f, () => { });
             prioBtn.GetComponent<Button>().interactable = false;
-            UiKit.AddButton(_panel.transform, "-", 295f, yPrio, 45f, 34f, () =>
-            {
-                ChestCategories.SetPriority(_panelFor, ChestCategories.GetPriority(_panelFor) - 1);
-                UiKit.SetButtonText(prioBtn, PriorityLabel(ChestCategories.GetPriority(_panelFor)));
-            });
-            UiKit.AddButton(_panel.transform, "+", 345f, yPrio, 45f, 34f, () =>
-            {
-                ChestCategories.SetPriority(_panelFor, ChestCategories.GetPriority(_panelFor) + 1);
-                UiKit.SetButtonText(prioBtn, PriorityLabel(ChestCategories.GetPriority(_panelFor)));
-            });
+            UiKit.AddButton(_panel.transform, "-", 295f, yPrio, 45f, 34f, () => ChangePriority(prioBtn, -1));
+            UiKit.AddButton(_panel.transform, "+", 345f, yPrio, 45f, 34f, () => ChangePriority(prioBtn, +1));
 
             // Nouvelle catégorie : nom + bouton Ajouter
             float yNew = yPrio + 48f;
@@ -177,6 +143,12 @@ namespace SmartChest.UI
             Open(_panelFor);
         }
 
+        private static void ChangePriority(GameObject label, int delta)
+        {
+            ChestCategories.SetPriority(_panelFor, ChestCategories.GetPriority(_panelFor) + delta);
+            UiKit.SetButtonText(label, PriorityLabel(ChestCategories.GetPriority(_panelFor)));
+        }
+
         private static string PriorityLabel(int prio) =>
             Localization.instance.Localize("$smartchest_priority") + " : " + prio;
 
@@ -202,12 +174,6 @@ namespace SmartChest.UI
     [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Hide))]
     internal static class InventoryGuiHidePatch
     {
-        private static void Postfix()
-        {
-            ChestPanel.Close();
-            ItemEditorPanel.Close();
-            CategoryManagerPanel.Close();
-            SearchPanel.Close();
-        }
+        private static void Postfix() => Panels.CloseAll();
     }
 }

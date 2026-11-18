@@ -10,18 +10,16 @@ namespace SmartChest.Catalog
     /// <summary>
     /// Le catalogue : liste des catégories (par défaut + perso) et catégories de chaque type d'objet.
     /// Sauvegardé dans BepInEx/config/SmartChest/catalog.json.
-    /// (Étape 5 : sur serveur, la version du serveur sera envoyée aux joueurs.)
     /// </summary>
     public static class CatalogManager
     {
         public static string FilePath => Path.Combine(Paths.ConfigPath, "SmartChest", "catalog.json");
 
-        public static event Action Changed;
-
         private static CatalogData _data;
         private static readonly Dictionary<string, Category> _byId = new Dictionary<string, Category>();
         private static readonly Dictionary<string, List<string>> _overrides = new Dictionary<string, List<string>>();
         private static readonly Dictionary<string, List<string>> _defaultCache = new Dictionary<string, List<string>>();
+        private static readonly Dictionary<string, int> _rank = new Dictionary<string, int>();
 
         public static IReadOnlyList<Category> Categories => _data.Categories;
 
@@ -76,40 +74,72 @@ namespace SmartChest.Catalog
             return clone >= 0 ? name.Substring(0, clone).Trim() : name;
         }
 
-        /// <summary>Catégories actives d'un objet : celles choisies à la main, sinon celles par défaut. Les catégories supprimées sont ignorées.</summary>
+        /// <summary>
+        /// Catégories actives d'un objet : celles choisies à la main, sinon celles par défaut.
+        /// Les catégories supprimées sont ignorées. Renvoie une copie que l'appelant peut modifier.
+        /// </summary>
         public static List<string> GetItemCategories(ItemDrop.ItemData item)
         {
-            string prefab = GetPrefabName(item);
-            if (_overrides.TryGetValue(prefab, out var manual))
-                return manual.Where(_byId.ContainsKey).ToList();
-            return GetDefaultCategories(item);
+            var result = new List<string>();
+            foreach (string id in RawCategories(item))
+                if (_byId.ContainsKey(id)) result.Add(id);
+            return result;
         }
 
-        public static List<string> GetDefaultCategories(ItemDrop.ItemData item)
+        /// <summary>L'objet a-t-il au moins une des catégories données ? (sans créer de liste : appelé pour chaque objet à chaque rangement)</summary>
+        public static bool MatchesAny(ItemDrop.ItemData item, ICollection<string> categoryIds)
+        {
+            if (item == null || categoryIds == null || categoryIds.Count == 0) return false;
+            foreach (string id in RawCategories(item))
+                if (categoryIds.Contains(id) && _byId.ContainsKey(id)) return true;
+            return false;
+        }
+
+        /// <summary>Rang d'un objet pour le tri : position de sa première catégorie dans le catalogue.</summary>
+        public static int SortRank(ItemDrop.ItemData item)
+        {
+            int best = int.MaxValue;
+            foreach (string id in RawCategories(item))
+                if (_rank.TryGetValue(id, out int r) && r < best) best = r;
+            return best;
+        }
+
+        /// <summary>Liste interne (choisie à la main ou calculée et mise en cache) : ne jamais la modifier.</summary>
+        private static List<string> RawCategories(ItemDrop.ItemData item)
         {
             string prefab = GetPrefabName(item);
+            if (_overrides.TryGetValue(prefab, out var manual)) return manual;
             if (!_defaultCache.TryGetValue(prefab, out var cats))
             {
                 cats = DefaultRules.Compute(item);
                 _defaultCache[prefab] = cats;
             }
-            // Copie : l'appelant peut modifier la liste sans abîmer le cache
-            return new List<string>(cats);
+            return cats;
         }
+
+        /// <summary>Texte « Catégorie1, Catégorie2 » avec la couleur de chaque catégorie (balises Unity).</summary>
+        public static string ColoredNames(IEnumerable<string> categoryIds) =>
+            string.Join(", ", categoryIds
+                .Select(GetCategory)
+                .Where(c => c != null)
+                .Select(c => $"<color=#{c.Color}>{c.DisplayName}</color>"));
+
+        /// <summary>Catégories visibles dans les listes de cases à cocher (non masquées), dans l'ordre du catalogue.</summary>
+        public static List<Category> VisibleCategories() => _data.Categories.Where(c => !c.Hidden).ToList();
 
         public static bool IsOverridden(ItemDrop.ItemData item) => _overrides.ContainsKey(GetPrefabName(item));
 
-        // ---------- Modification (utilisé par l'interface à l'étape 4) ----------
+        // ---------- Modification (depuis l'interface) ----------
 
         public static void SetItemCategories(ItemDrop.ItemData item, IEnumerable<string> categoryIds)
         {
             _overrides[GetPrefabName(item)] = categoryIds.Where(_byId.ContainsKey).Distinct().ToList();
-            SaveAndNotify();
+            Save();
         }
 
         public static void ResetItemCategories(ItemDrop.ItemData item)
         {
-            if (_overrides.Remove(GetPrefabName(item))) SaveAndNotify();
+            if (_overrides.Remove(GetPrefabName(item))) Save();
         }
 
         public static Category AddCustomCategory(string name, string color)
@@ -121,7 +151,7 @@ namespace SmartChest.Catalog
             var cat = new Category { Id = id, Name = name, Color = color ?? "FFFFFF", IsDefault = false };
             _data.Categories.Add(cat);
             RebuildIndex();
-            SaveAndNotify();
+            Save();
             return cat;
         }
 
@@ -131,7 +161,7 @@ namespace SmartChest.Catalog
             if (cat == null) return;
             if (!string.IsNullOrWhiteSpace(newName)) cat.Name = newName;
             if (!string.IsNullOrWhiteSpace(newColor)) cat.Color = newColor;
-            SaveAndNotify();
+            Save();
         }
 
         /// <summary>Masque ou réaffiche une catégorie (elle disparaît des listes de cases à cocher).</summary>
@@ -140,7 +170,7 @@ namespace SmartChest.Catalog
             var cat = GetCategory(id);
             if (cat == null || cat.Hidden == hidden) return;
             cat.Hidden = hidden;
-            SaveAndNotify();
+            Save();
         }
 
         /// <summary>Supprime une catégorie perso, ou masque une catégorie par défaut.</summary>
@@ -158,7 +188,7 @@ namespace SmartChest.Catalog
                 foreach (var list in _overrides.Values) list.Remove(id);
                 RebuildIndex();
             }
-            SaveAndNotify();
+            Save();
         }
 
         // ---------- Interne ----------
@@ -175,9 +205,13 @@ namespace SmartChest.Catalog
         private static void RebuildIndex()
         {
             _byId.Clear();
+            _rank.Clear();
             foreach (var c in _data.Categories)
                 if (!string.IsNullOrEmpty(c.Id) && !_byId.ContainsKey(c.Id))
+                {
                     _byId[c.Id] = c;
+                    _rank[c.Id] = _rank.Count;
+                }
         }
 
         private static void LoadOverrides()
@@ -186,12 +220,6 @@ namespace SmartChest.Catalog
             foreach (var o in _data.ItemOverrides)
                 if (!string.IsNullOrEmpty(o.Prefab))
                     _overrides[o.Prefab] = o.Categories ?? new List<string>();
-        }
-
-        private static void SaveAndNotify()
-        {
-            Save();
-            Changed?.Invoke();
         }
 
         private static string Slug(string name)

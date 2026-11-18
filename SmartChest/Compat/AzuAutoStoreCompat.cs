@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using SmartChest.Catalog;
@@ -64,8 +63,7 @@ namespace SmartChest.Compat
             List<string> chestCats = ChestCategories.Get(__0);
             if (chestCats.Count == 0) return true;
 
-            bool matches = CatalogManager.GetItemCategories(__1).Any(chestCats.Contains);
-            if (!matches)
+            if (!CatalogManager.MatchesAny(__1, chestCats))
             {
                 if (ChestCategories.GetMode(__0) == ChestMode.Overflow) return true; // comportement normal
                 __result = false;

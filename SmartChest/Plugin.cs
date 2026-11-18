@@ -87,7 +87,7 @@ namespace SmartChest
         /// <summary>Le joueur écrit dans le chat, la console, un panneau... : on ignore la touche.</summary>
         private static bool IsTypingSomewhere()
         {
-            if (ChestPanel.IsTyping) return true;
+            if (UiKit.IsTyping) return true;
             if (Chat.instance != null && Chat.instance.HasFocus()) return true;
             if (Console.IsVisible() || TextInput.IsVisible() || Menu.IsVisible()) return true;
             if (Minimap.instance != null && Minimap.instance.m_mode == Minimap.MapMode.Large) return true;

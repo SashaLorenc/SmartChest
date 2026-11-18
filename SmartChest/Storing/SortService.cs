@@ -28,18 +28,12 @@ namespace SmartChest.Storing
             var items = new List<ItemDrop.ItemData>(inv.m_inventory);
             MergeStacks(items, inv);
 
-            // Rang de chaque objet = position de sa première catégorie dans le catalogue
-            var order = new Dictionary<string, int>();
-            for (int i = 0; i < CatalogManager.Categories.Count; i++) order[CatalogManager.Categories[i].Id] = i;
-
+            // Rang (position de la première catégorie dans le catalogue) et nom traduit, calculés une fois par objet
             var rank = new Dictionary<ItemDrop.ItemData, int>();
             var names = new Dictionary<ItemDrop.ItemData, string>();
             foreach (ItemDrop.ItemData item in items)
             {
-                int best = int.MaxValue;
-                foreach (string id in CatalogManager.GetItemCategories(item))
-                    if (order.TryGetValue(id, out int r) && r < best) best = r;
-                rank[item] = best;
+                rank[item] = CatalogManager.SortRank(item);
                 names[item] = Localization.instance.Localize(item.m_shared.m_name);
             }
 

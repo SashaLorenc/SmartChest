@@ -12,9 +12,7 @@ namespace SmartChest.UI
     /// </summary>
     public static class ItemEditorPanel
     {
-        private const float RowHeight = 34f;
-        private const float ColWidth = 270f;
-        private const float PanelWidth = 590f;
+        private const float PanelWidth = UiKit.CategoryGridWidth;
 
         private static GameObject _panel;
         private static ItemDrop.ItemData _item;
@@ -75,20 +73,12 @@ namespace SmartChest.UI
 
         public static void Open(ItemDrop.ItemData item)
         {
-            Close();
-            ChestPanel.Close();
-            SearchPanel.Close();
-            CategoryManagerPanel.Close();
+            Panels.CloseAll();
             if (item == null) return;
             _item = item;
 
-            List<string> itemCats = CatalogManager.GetItemCategories(item);
-            var visible = new List<Category>();
-            foreach (Category c in CatalogManager.Categories)
-                if (!c.Hidden) visible.Add(c);
-
-            int rows = (visible.Count + 1) / 2;
-            float height = 110f + rows * RowHeight + 70f;
+            float gridHeight = UiKit.CategoryGridHeight();
+            float height = 110f + gridHeight + 70f;
             _panel = UiKit.CreatePanel(PanelWidth, height);
 
             string itemName = Localization.instance.Localize(item.m_shared.m_name);
@@ -99,18 +89,9 @@ namespace SmartChest.UI
             UiKit.AddText(_panel.transform, Localization.instance.Localize(state), 20f, 48f, PanelWidth - 40f, 26f, 16,
                 new Color(0.8f, 0.8f, 0.8f));
 
-            for (int i = 0; i < visible.Count; i++)
-            {
-                Category cat = visible[i];
-                float x = 25f + (i % 2) * ColWidth;
-                float y = 90f + (i / 2) * RowHeight;
-                string id = cat.Id;
+            UiKit.AddCategoryGrid(_panel.transform, 90f, CatalogManager.GetItemCategories(item), SetCategory);
 
-                UiKit.AddToggle(_panel.transform, x, y, itemCats.Contains(id), on => SetCategory(id, on));
-                UiKit.AddText(_panel.transform, $"<color=#{cat.Color}>{cat.DisplayName}</color>", x + 34f, y, ColWidth - 40f, 28f, 18, Color.white);
-            }
-
-            float bottom = 90f + rows * RowHeight + 15f;
+            float bottom = 90f + gridHeight + 15f;
             UiKit.AddButton(_panel.transform, "$smartchest_reset_default", 25f, bottom, 260f, 34f, () =>
             {
                 ItemDrop.ItemData it = _item;

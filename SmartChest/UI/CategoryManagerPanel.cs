@@ -24,10 +24,7 @@ namespace SmartChest.UI
 
         public static void Open(Container returnTo)
         {
-            Close();
-            ChestPanel.Close();
-            SearchPanel.Close();
-            ItemEditorPanel.Close();
+            Panels.CloseAll();
             _returnTo = returnTo;
 
             var all = new List<Category>(CatalogManager.Categories);

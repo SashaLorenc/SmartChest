@@ -43,19 +43,11 @@ namespace SmartChest.Chests
                 .ToList();
         }
 
-        public static bool HasAny(Container container) => Get(container).Count > 0;
-
         public static ChestMode GetMode(Container container)
         {
             ZDO zdo = GetZdo(container);
             return zdo == null ? ChestMode.Strict : (ChestMode)zdo.GetInt(KeyMode, 0);
         }
-
-        /// <summary>Coffre « reçoit le reste » sans catégorie : il prend tout ce qui n'a pas trouvé d'autre coffre.</summary>
-        public static bool IsCatchAll(Container container) => GetMode(container) == ChestMode.Overflow && !HasAny(container);
-
-        /// <summary>Le coffre participe au rangement : il a des catégories, ou il reçoit le reste.</summary>
-        public static bool IsSmart(Container container) => HasAny(container) || GetMode(container) == ChestMode.Overflow;
 
         /// <summary>Priorité de 0 à 9 : entre deux coffres de la même catégorie, le plus prioritaire est rempli d'abord.</summary>
         public static int GetPriority(Container container)

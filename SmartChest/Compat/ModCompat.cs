@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using BepInEx.Bootstrap;
@@ -40,6 +41,9 @@ namespace SmartChest.Compat
 
         // Interface
         public const string Auga = "randyknapp.mods.auga";
+
+        /// <summary>Clé du ZDO où le jeu indique qu'un coffre est ouvert par quelqu'un.</summary>
+        private const string ZdoInUse = "InUse";
 
         public static bool Has(string guid) => Chainloader.PluginInfos.ContainsKey(guid);
 
@@ -108,13 +112,15 @@ namespace SmartChest.Compat
             if (c.IsInUse()) return true;
             if (c.m_wagon != null && c.m_wagon.InUse()) return true;
             ZDO zdo = c.m_nview.GetZDO();
-            return zdo != null && zdo.GetInt("InUse", 0) == 1;
+            return zdo != null && zdo.GetInt(ZdoInUse, 0) == 1;
         }
 
-        /// <summary>Peut-on modifier ce coffre à distance (touche de rangement) ? Mêmes règles que Quick Stack Store.</summary>
+        /// <summary>
+        /// Peut-on modifier ce coffre à distance (touche de rangement) ? Mêmes règles que Quick Stack Store.
+        /// Suppose que IsEligibleChest a déjà été vérifié.
+        /// </summary>
         public static bool CanAffectRemotely(Container c, Player player)
         {
-            if (!IsEligibleChest(c)) return false;
             if (!c.CheckAccess(player.GetPlayerID())) return false;
             if (c.m_checkGuardStone && !PrivateArea.CheckAccess(c.transform.position, 0f, false, false)) return false;
 
@@ -144,7 +150,7 @@ namespace SmartChest.Compat
             c.m_inUse = inUse;
             ZDO zdo = c.m_nview.GetZDO();
             if (zdo == null) return;
-            zdo.Set("InUse", inUse ? 1 : 0);
+            zdo.Set(ZdoInUse, inUse ? 1 : 0);
             ZDOMan.instance.ForceSendZDO(ZNet.GetUID(), zdo.m_uid);
         }
 
@@ -288,10 +294,8 @@ namespace SmartChest.Compat
             {
                 if (_baEnabled == null || _baRow == null)
                 {
-                    Type t = FindType("BetterArchery", "BetterArchery");
-                    FieldInfo[] fields = t?.GetFields(BindingFlags.Public | BindingFlags.Static) ?? new FieldInfo[0];
-                    _baEnabled = fields.FirstOrDefault(f => f.Name.Equals("ConfigQuiverEnabled", StringComparison.OrdinalIgnoreCase));
-                    _baRow = fields.FirstOrDefault(f => f.Name.Equals("QuiverRowIndex", StringComparison.OrdinalIgnoreCase));
+                    _baEnabled = StaticField("BetterArchery", "BetterArchery", "ConfigQuiverEnabled");
+                    _baRow = StaticField("BetterArchery", "BetterArchery", "QuiverRowIndex");
                     if (_baEnabled == null || _baRow == null) { _baFailed = true; return false; }
                 }
                 if (!(_baEnabled.GetValue(null) is ConfigEntry<bool> on) || !on.Value) return false;
@@ -309,19 +313,46 @@ namespace SmartChest.Compat
         // Réflexion
         // ---------------------------------------------------------------------
 
+        private static readonly Dictionary<string, Type> _typeCache = new Dictionary<string, Type>();
+        private static readonly Dictionary<string, FieldInfo> _fieldCache = new Dictionary<string, FieldInfo>();
+
+        /// <summary>Classe d'un autre mod, par nom d'assembly et nom court. Mis en cache : appelé pour chaque objet rangé.</summary>
         private static Type FindType(string assemblyName, string className)
         {
-            Assembly asm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName);
-            return asm?.GetTypes().FirstOrDefault(t => t.IsClass && t.Name == className);
+            string key = assemblyName + "/" + className;
+            if (_typeCache.TryGetValue(key, out Type cached)) return cached;
+
+            Type type = null;
+            try
+            {
+                Assembly asm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName);
+                type = asm?.GetTypes().FirstOrDefault(t => t.IsClass && t.Name == className);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"Lecture de {assemblyName} impossible : {e.Message}");
+            }
+            _typeCache[key] = type;
+            return type;
+        }
+
+        /// <summary>Champ statique public d'une classe d'un autre mod (nom sans tenir compte de la casse), mis en cache.</summary>
+        private static FieldInfo StaticField(string assemblyName, string className, string fieldName)
+        {
+            string key = assemblyName + "/" + className + "/" + fieldName;
+            if (_fieldCache.TryGetValue(key, out FieldInfo cached)) return cached;
+
+            FieldInfo field = FindType(assemblyName, className)?.GetFields(BindingFlags.Public | BindingFlags.Static)
+                .FirstOrDefault(x => x.Name.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+            _fieldCache[key] = field;
+            return field;
         }
 
         private static bool BoolField(string assemblyName, string className, string fieldName)
         {
             try
             {
-                FieldInfo f = FindType(assemblyName, className)?.GetFields(BindingFlags.Public | BindingFlags.Static)
-                    .FirstOrDefault(x => x.Name.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
-                return f?.GetValue(null) is ConfigEntry<bool> c && c.Value;
+                return StaticField(assemblyName, className, fieldName)?.GetValue(null) is ConfigEntry<bool> c && c.Value;
             }
             catch
             {
@@ -334,9 +365,7 @@ namespace SmartChest.Compat
         {
             try
             {
-                FieldInfo f = FindType(assemblyName, className)?.GetFields(BindingFlags.Public | BindingFlags.Static)
-                    .FirstOrDefault(x => x.Name.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
-                object v = f?.GetValue(null);
+                object v = StaticField(assemblyName, className, fieldName)?.GetValue(null);
                 if (v is ConfigEntry<bool> b) return b.Value;
                 if (v is ConfigEntryBase e) return Convert.ToInt32(e.BoxedValue) != 0;
                 return false;
