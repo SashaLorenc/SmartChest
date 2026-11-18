@@ -133,6 +133,15 @@ namespace SmartChest.Catalog
             SaveAndNotify();
         }
 
+        /// <summary>Masque ou réaffiche une catégorie (elle disparaît des listes de cases à cocher).</summary>
+        public static void SetHidden(string id, bool hidden)
+        {
+            var cat = GetCategory(id);
+            if (cat == null || cat.Hidden == hidden) return;
+            cat.Hidden = hidden;
+            SaveAndNotify();
+        }
+
         /// <summary>Supprime une catégorie perso, ou masque une catégorie par défaut.</summary>
         public static void RemoveCategory(string id)
         {

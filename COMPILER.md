@@ -110,3 +110,14 @@ Au lancement, `LogOutput.log` doit afficher `Intégration Quick Stack Store : ac
 4. Mets un objet en favori (Alt + clic) : ni Quick Stack ni la touche L ne doivent le déplacer.
 
 Désactivable dans la config : `[Compatibilite] QuickStackStore = false`.
+
+## Tester l'étape 4 (éditeur de catégories)
+
+1. `git pull`, recompile, lance le jeu.
+2. **Catégories d'un objet** : ouvre l'inventaire, survole un objet et appuie sur **K**. Coche ou décoche des catégories : ça vaut pour tous les objets de ce type. L'infobulle affiche une `*` quand les catégories ont été modifiées. **Rétablir le défaut** annule tes changements.
+3. **Gérer les catégories** : ouvre un coffre → **Catégories** → **Gérer**. Pour chaque catégorie :
+   - clique la pastille de couleur pour changer de couleur ;
+   - modifie le nom puis appuie sur Entrée ;
+   - **Masquer / Afficher** pour les catégories par défaut, **Supprimer** (deux clics) pour les tiennes.
+   **Retour** revient au panneau du coffre.
+4. Tout est enregistré dans `BepInEx/config/SmartChest/catalog.json`.

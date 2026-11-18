@@ -42,6 +42,8 @@ namespace SmartChest.UI
                 .Select(CatalogManager.GetCategory)
                 .Where(c => c != null)
                 .Select(c => $"<color=#{c.Color}>{c.DisplayName}</color>")));
+            if (CatalogManager.IsOverridden(__0)) sb.Append(" *");
+            sb.Append($"\n<color=#AAAAAA>[{Plugin.EditItemKey.Value}] {Localization.instance.Localize("$smartchest_tooltip_edit_hint")}</color>");
             sb.Append(Marker);
             __result = sb.ToString();
         }

@@ -29,5 +29,15 @@
   "smartchest_new_category_placeholder": "New category name",
   "smartchest_msg_no_categories": "This chest has no category",
   "smartchest_msg_no_chest": "No categorized chest in range",
-  "smartchest_msg_nothing": "Nothing to store"
+  "smartchest_msg_nothing": "Nothing to store",
+  "smartchest_item_custom": "Categories customized for this item type",
+  "smartchest_item_default": "Default categories",
+  "smartchest_manage": "Manage",
+  "smartchest_manage_title": "Manage categories",
+  "smartchest_show": "Show",
+  "smartchest_hide": "Hide",
+  "smartchest_delete": "Delete",
+  "smartchest_confirm": "Confirm?",
+  "smartchest_back": "Back",
+  "smartchest_tooltip_edit_hint": "edit"
 }

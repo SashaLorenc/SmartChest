@@ -29,5 +29,15 @@
   "smartchest_new_category_placeholder": "Nom de la nouvelle catégorie",
   "smartchest_msg_no_categories": "Ce coffre n'a aucune catégorie",
   "smartchest_msg_no_chest": "Aucun coffre catégorisé à portée",
-  "smartchest_msg_nothing": "Rien à ranger"
+  "smartchest_msg_nothing": "Rien à ranger",
+  "smartchest_item_custom": "Catégories modifiées pour ce type d'objet",
+  "smartchest_item_default": "Catégories par défaut",
+  "smartchest_manage": "Gérer",
+  "smartchest_manage_title": "Gérer les catégories",
+  "smartchest_show": "Afficher",
+  "smartchest_hide": "Masquer",
+  "smartchest_delete": "Supprimer",
+  "smartchest_confirm": "Confirmer ?",
+  "smartchest_back": "Retour",
+  "smartchest_tooltip_edit_hint": "modifier"
 }
