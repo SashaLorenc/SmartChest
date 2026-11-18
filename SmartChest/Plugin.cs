@@ -27,7 +27,7 @@ namespace SmartChest
     {
         public const string ModGuid = "sashalorenc.SmartChest";
         public const string ModName = "Smart Chest";
-        public const string ModVersion = "0.1.0";
+        public const string ModVersion = "1.0.0";
 
         public const string QuickStackStoreGuid = "goldenrevolver.quick_stack_store";
 

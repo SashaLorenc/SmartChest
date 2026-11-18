@@ -132,3 +132,16 @@ Désactivable dans la config : `[Compatibilite] QuickStackStore = false`.
 4. **Priorités** : dans le panneau **Catégories** d'un coffre, **Priorité** avec **-** et **+** (0 à 9). Deux coffres « Bois et pierre » : celui qui a la plus haute priorité se remplit d'abord, l'autre prend la suite quand il est plein.
 5. **Coffre plein** : le survol d'un coffre plein affiche PLEIN en rouge. Remplis un coffre catégorisé puis appuie sur L avec encore des objets de sa catégorie : un message « Coffre plein : … » apparaît en haut à gauche. Désactivable : `[Rangement] AlerteCoffrePlein = false`.
 6. **Trier** : nouveau bouton **Trier** à côté de **Ranger ici** : le contenu du coffre est regroupé par catégorie puis par nom, et les piles incomplètes sont fusionnées.
+
+## Créer le zip Thunderstore
+
+Les fichiers de la page du mod sont dans `Thunderstore/` (manifest.json, README.md en anglais, CHANGELOG.md, icon.png).
+
+1. Pour une nouvelle version : change `version_number` dans `Thunderstore/manifest.json` **et** `ModVersion` dans `SmartChest/Plugin.cs` (les deux doivent être identiques, le script vérifie), et ajoute une section dans `CHANGELOG.md`.
+2. Depuis la racine du dépôt (terminal UCRT64 ou PowerShell) :
+   ```
+   powershell -ExecutionPolicy Bypass -File package.ps1
+   ```
+3. Le zip est créé dans `release/SmartChest-<version>.zip` (dossier ignoré par git).
+
+Contenu du zip : `manifest.json`, `README.md`, `CHANGELOG.md`, `icon.png` à la racine, et `plugins/SmartChest.dll` + `plugins/Translations/`.

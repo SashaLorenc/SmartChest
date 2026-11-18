@@ -1,0 +1,10 @@
+{
+  "name": "SmartChest",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/SashaLorenc/SmartChest",
+  "description": "Give categories to your chests and items, then store everything in the right chest with one key or button. Priorities, catch-all chest, search, sort. Works with Quick Stack Store.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2202",
+    "ValheimModding-Jotunn-2.30.2"
+  ]
+}
