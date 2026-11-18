@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using HarmonyLib;
 using Jotunn.Managers;
@@ -22,72 +21,56 @@ namespace SmartChest.UI
 
         public static bool IsOpen => _panel != null;
 
+        /// <summary>Dernière case d'inventaire survolée, signalée par l'interface du jeu elle-même (UIInputHandler).</summary>
+        private static GameObject _hoveredSlot;
+
+        internal static void SetHovered(GameObject go) => _hoveredSlot = go;
+
+        internal static void ClearHovered(GameObject go)
+        {
+            if (_hoveredSlot == go) _hoveredSlot = null;
+        }
+
         internal static void OnInventoryUpdate(InventoryGui gui)
         {
             if (UiKit.IsTyping || !Plugin.EditItemKey.Value.IsDown()) return;
 
-            ItemDrop.ItemData hovered = GetHoveredItem(gui.m_playerGrid) ?? GetHoveredItem(gui.m_containerGrid);
-            if (hovered != null) Open(hovered);
+            ItemDrop.ItemData hovered = GetHoveredItem(gui.m_playerGrid, "joueur") ?? GetHoveredItem(gui.m_containerGrid, "coffre");
+            if (hovered == null)
+            {
+                Plugin.Log.LogInfo($"Touche K : aucun objet sous la souris (case survolée : {(_hoveredSlot != null ? _hoveredSlot.name : "aucune")}).");
+                return;
+            }
+            Plugin.Log.LogInfo($"Touche K : édition de {CatalogManager.GetPrefabName(hovered)}.");
+            Open(hovered);
         }
 
         /// <summary>
         /// Objet sous la souris dans une grille d'inventaire.
-        /// 1) le jeu sait déjà quelle case est survolée : InventoryGrid.GetHoveredElement() ;
-        /// 2) sinon on cherche la case qui contient la souris (même calcul que le jeu).
-        /// La position de la case est ensuite donnée par InventoryGrid.GetButtonPos(GameObject),
-        /// la même méthode qu'utilise Quick Stack Store pour ses favoris.
-        /// Le type des cases (InventoryElement) a changé de nom selon les versions : on le lit par réflexion.
+        /// Chaque case du jeu porte un UIInputHandler qui reçoit les événements « souris entre / sort » :
+        /// on retient la case survolée (patch plus bas), puis InventoryGrid.GetButtonPos(case) donne sa position.
+        /// Rien ne dépend de la position de la souris ni des champs internes des cases.
         /// </summary>
-        private static ItemDrop.ItemData GetHoveredItem(InventoryGrid grid)
+        private static ItemDrop.ItemData GetHoveredItem(InventoryGrid grid, string label)
         {
-            if (grid == null || grid.GetInventory() == null || !grid.gameObject.activeInHierarchy) return null;
+            if (grid == null || grid.GetInventory() == null || _hoveredSlot == null) return null;
             try
             {
-                GameObject slot = null;
-
-                Traverse hovered = Traverse.Create(grid).Method("GetHoveredElement");
-                if (hovered.MethodExists())
+                // La case survolée peut être un enfant de l'objet que la grille connaît : on remonte les parents
+                for (Transform t = _hoveredSlot.transform; t != null; t = t.parent)
                 {
-                    object element = hovered.GetValue();
-                    if (element != null) slot = SlotObject(element);
+                    Vector2i pos = grid.GetButtonPos(t.gameObject);
+                    if (pos.x < 0 || pos.y < 0) continue;
+                    ItemDrop.ItemData item = grid.GetInventory().GetItemAt(pos.x, pos.y);
+                    Plugin.Log.LogInfo($"Touche K : case ({pos.x},{pos.y}) de l'inventaire {label}, objet : {(item != null ? CatalogManager.GetPrefabName(item) : "vide")}.");
+                    return item;
                 }
-
-                if (slot == null)
-                {
-                    var elements = Traverse.Create(grid).Field("m_elements").GetValue() as IEnumerable;
-                    if (elements == null) return null;
-                    Vector2 mouse = Input.mousePosition;
-                    foreach (object element in elements)
-                    {
-                        GameObject go = SlotObject(element);
-                        if (go == null || !go.activeInHierarchy) continue;
-                        var rt = (RectTransform)go.transform;
-                        if (rt.rect.Contains(rt.InverseTransformPoint(mouse)))
-                        {
-                            slot = go;
-                            break;
-                        }
-                    }
-                }
-
-                if (slot == null) return null;
-                Vector2i pos = grid.GetButtonPos(slot);
-                Plugin.Log.LogDebug($"Touche K : case ({pos.x},{pos.y}) survolée");
-                if (pos.x < 0 || pos.y < 0) return null;
-                return grid.GetInventory().GetItemAt(pos.x, pos.y);
             }
             catch (System.Exception ex)
             {
-                Plugin.Log.LogWarning("Objet survolé introuvable : " + ex.Message);
-                return null;
+                Plugin.Log.LogWarning($"Touche K : erreur en lisant l'inventaire {label} : {ex}");
             }
-        }
-
-        /// <summary>Objet Unity d'une case (champ m_go). Renvoie null si le champ n'existe pas, au lieu d'une valeur par défaut.</summary>
-        private static GameObject SlotObject(object element)
-        {
-            Traverse go = Traverse.Create(element).Field("m_go");
-            return go.FieldExists() ? go.GetValue<GameObject>() : null;
+            return null;
         }
 
         public static void Open(ItemDrop.ItemData item)

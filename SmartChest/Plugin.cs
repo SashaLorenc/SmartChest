@@ -58,6 +58,7 @@ namespace SmartChest
 
             _harmony = new Harmony(ModGuid);
             _harmony.PatchAll(typeof(Plugin).Assembly);
+            HoverTracker.Init(_harmony);
             QuickStackStoreCompat.TryInit(_harmony);
             AzuAutoStoreCompat.TryInit(_harmony);
 
