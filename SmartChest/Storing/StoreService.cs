@@ -93,7 +93,9 @@ namespace SmartChest.Storing
             var claimed = new HashSet<Container>();
 
             // Copie de la liste : on modifie l'inventaire pendant la boucle
-            foreach (ItemDrop.ItemData item in playerInv.GetAllItems().ToList())
+            // On lit la liste brute de la grille principale (comme Quick Stack Store) : avec Equipment and
+            // Quick Slots, GetAllItems() inclut aussi ses emplacements d'équipement et de raccourcis.
+            foreach (ItemDrop.ItemData item in playerInv.m_inventory.ToList())
             {
                 if (!CanStore(item) || QuickStackStoreCompat.IsFavorited(player, item)) continue;
                 // Emplacements d'équipement / raccourcis / carquois ajoutés par d'autres mods d'inventaire

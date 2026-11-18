@@ -43,6 +43,23 @@ namespace SmartChest.Compat
 
         public static bool Has(string guid) => Chainloader.PluginInfos.ContainsKey(guid);
 
+        /// <summary>
+        /// Type d'un autre mod, cherché uniquement dans son assembly (AccessTools.TypeByName parcourt
+        /// toutes les assemblies et fait apparaître des avertissements HarmonyX pour d'autres mods, ex. VNEI).
+        /// </summary>
+        public static Type PluginType(string guid, string fullName)
+        {
+            try
+            {
+                if (!Chainloader.PluginInfos.TryGetValue(guid, out var info) || info.Instance == null) return null;
+                return info.Instance.GetType().Assembly.GetType(fullName, false);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public static void LogDetected()
         {
             string[] all =
@@ -145,7 +162,7 @@ namespace SmartChest.Compat
             {
                 if (_isRestrictedContainer == null)
                 {
-                    Type t = AccessTools.TypeByName("DynamicStoragePiles.RestrictContainers") ?? FindType("DynamicStoragePiles", "RestrictContainers");
+                    Type t = PluginType(DynamicStoragePiles, "DynamicStoragePiles.RestrictContainers") ?? FindType("DynamicStoragePiles", "RestrictContainers");
                     _isRestrictedContainer = t?.GetMethods(BindingFlags.Public | BindingFlags.Static)
                         .FirstOrDefault(m => m.Name.Equals("IsRestrictedContainer", StringComparison.OrdinalIgnoreCase));
                     if (_isRestrictedContainer == null) { _restrictedLookupFailed = true; return false; }
@@ -182,7 +199,7 @@ namespace SmartChest.Compat
                 _qssLookupDone = true;
                 if (Has(Plugin.QuickStackStoreGuid))
                 {
-                    Type t = AccessTools.TypeByName("QuickStackStore.CompatibilitySupport");
+                    Type t = PluginType(Plugin.QuickStackStoreGuid, "QuickStackStore.CompatibilitySupport");
                     _qssIsEquipOrQuickSlot = t != null ? AccessTools.Method(t, "IsEquipOrQuickSlot", new[] { typeof(int), typeof(int), typeof(Vector2i) }) : null;
                 }
             }
@@ -216,7 +233,7 @@ namespace SmartChest.Compat
             {
                 if (_azuGetAddedRows == null)
                 {
-                    Type api = AccessTools.TypeByName("AzuExtendedPlayerInventory.API");
+                    Type api = PluginType(AzuEPI, "AzuExtendedPlayerInventory.API");
                     _azuGetAddedRows = api != null ? AccessTools.Method(api, "GetAddedRows", new[] { typeof(int) }) : null;
                 }
                 int rows;

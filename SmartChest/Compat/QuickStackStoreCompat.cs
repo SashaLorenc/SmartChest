@@ -33,9 +33,9 @@ namespace SmartChest.Compat
 
             try
             {
-                Type quickStack = AccessTools.TypeByName("QuickStackStore.QuickStackModule");
-                Type storeAll = AccessTools.TypeByName("QuickStackStore.StoreTakeAllModule");
-                Type userConfig = AccessTools.TypeByName("QuickStackStore.UserConfig");
+                Type quickStack = ModCompat.PluginType(Plugin.QuickStackStoreGuid, "QuickStackStore.QuickStackModule");
+                Type storeAll = ModCompat.PluginType(Plugin.QuickStackStoreGuid, "QuickStackStore.StoreTakeAllModule");
+                Type userConfig = ModCompat.PluginType(Plugin.QuickStackStoreGuid, "QuickStackStore.UserConfig");
 
                 MethodInfo quickStackInto = quickStack != null ? AccessTools.Method(quickStack, "QuickStackIntoThisContainer") : null;
                 MethodInfo shouldStore = storeAll != null ? AccessTools.Method(storeAll, "ShouldStoreItem") : null;
