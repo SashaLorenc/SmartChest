@@ -7,7 +7,8 @@
     <TargetFramework>net462</TargetFramework>
     <AssemblyName>SmartChest</AssemblyName>
     <RootNamespace>SmartChest</RootNamespace>
-    <LangVersion>latest</LangVersion>
+    <!-- Version fixe : les SDK récents (C# 14) changent certains mots-clés -->
+    <LangVersion>12.0</LangVersion>
     <Nullable>disable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>

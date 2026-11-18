@@ -56,9 +56,9 @@ namespace SmartChest.UI
                 if (img != null && ColorUtility.TryParseHtmlString("#" + cat.Color, out Color col)) img.color = col;
 
                 // Nom modifiable : validé quand on quitte le champ ou appuie sur Entrée
-                InputField field = UiKit.AddInput(_panel.transform, cat.DisplayName, "", x + 36f, y, 210f, 30f);
+                InputField input = UiKit.AddInput(_panel.transform, cat.DisplayName, "", x + 36f, y, 210f, 30f);
                 string original = cat.DisplayName;
-                field.onEndEdit.AddListener(text =>
+                input.onEndEdit.AddListener(text =>
                 {
                     string name = (text ?? "").Trim();
                     if (name.Length == 0 || name == original) return;
@@ -66,7 +66,7 @@ namespace SmartChest.UI
                 });
                 if (cat.Hidden)
                 {
-                    Text t = field.textComponent;
+                    Text t = input.textComponent;
                     if (t != null) t.color = new Color(0.6f, 0.6f, 0.6f);
                 }
 

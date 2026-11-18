@@ -19,8 +19,8 @@ namespace SmartChest.UI
             {
                 EventSystem es = EventSystem.current;
                 if (es == null || es.currentSelectedGameObject == null) return false;
-                InputField field = es.currentSelectedGameObject.GetComponent<InputField>();
-                return field != null && field.isFocused;
+                InputField input = es.currentSelectedGameObject.GetComponent<InputField>();
+                return input != null && input.isFocused;
             }
         }
 
@@ -68,10 +68,10 @@ namespace SmartChest.UI
                 width: width,
                 height: height);
             Place(go, x, y, width, height);
-            InputField field = go.GetComponent<InputField>();
-            field.characterLimit = 32;
-            field.text = text ?? "";
-            return field;
+            InputField input = go.GetComponent<InputField>();
+            input.characterLimit = 32;
+            input.text = text ?? "";
+            return input;
         }
 
 

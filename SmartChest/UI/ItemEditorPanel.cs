@@ -1,4 +1,6 @@
+using System.Collections;
 using System.Collections.Generic;
+using HarmonyLib;
 using Jotunn.Managers;
 using SmartChest.Catalog;
 using UnityEngine;
@@ -28,12 +30,42 @@ namespace SmartChest.UI
             if (hovered != null) Open(hovered);
         }
 
+        /// <summary>
+        /// Objet sous la souris dans une grille d'inventaire. Le type interne des cases (InventoryGrid.Element)
+        /// n'est pas accessible selon les versions, donc on passe par la réflexion (Traverse) :
+        /// d'abord GetHoveredElement(), sinon on cherche la case qui contient la souris.
+        /// </summary>
         private static ItemDrop.ItemData GetHoveredItem(InventoryGrid grid)
         {
             if (grid == null || grid.GetInventory() == null) return null;
-            InventoryGrid.Element element = grid.GetHoveredElement();
-            if (element == null) return null;
-            return grid.GetInventory().GetItemAt(element.m_pos.x, element.m_pos.y);
+            try
+            {
+                object element = Traverse.Create(grid).Method("GetHoveredElement").GetValue();
+                if (element == null)
+                {
+                    var elements = Traverse.Create(grid).Field("m_elements").GetValue() as IEnumerable;
+                    if (elements != null)
+                    {
+                        foreach (object e in elements)
+                        {
+                            var go = Traverse.Create(e).Field("m_go").GetValue<GameObject>();
+                            if (go != null && RectTransformUtility.RectangleContainsScreenPoint((RectTransform)go.transform, Input.mousePosition))
+                            {
+                                element = e;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (element == null) return null;
+                Vector2i pos = Traverse.Create(element).Field("m_pos").GetValue<Vector2i>();
+                return grid.GetInventory().GetItemAt(pos.x, pos.y);
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.LogWarning("Objet survolé introuvable : " + e.Message);
+                return null;
+            }
         }
 
         public static void Open(ItemDrop.ItemData item)
