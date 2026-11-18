@@ -31,41 +31,43 @@ namespace SmartChest.UI
         }
 
         /// <summary>
-        /// Objet sous la souris dans une grille d'inventaire. Le type interne des cases (InventoryGrid.Element)
-        /// n'est pas accessible selon les versions, donc on passe par la réflexion (Traverse) :
-        /// d'abord GetHoveredElement(), sinon on cherche la case qui contient la souris.
+        /// Objet sous la souris dans une grille d'inventaire. On parcourt les cases de la grille
+        /// (champ interne m_elements, lu par réflexion car son type n'est pas accessible) et on garde
+        /// celle dont le rectangle contient la souris, en tenant compte de la caméra du canvas
+        /// (sans elle, toutes les cases semblaient survolées et la première, celle de la barre 1, gagnait).
         /// </summary>
         private static ItemDrop.ItemData GetHoveredItem(InventoryGrid grid)
         {
-            if (grid == null || grid.GetInventory() == null) return null;
+            if (grid == null || grid.GetInventory() == null || !grid.gameObject.activeInHierarchy) return null;
             try
             {
-                object element = Traverse.Create(grid).Method("GetHoveredElement").GetValue();
-                if (element == null)
+                var elements = Traverse.Create(grid).Field("m_elements").GetValue() as IEnumerable;
+                if (elements == null) return null;
+
+                Vector2 mouse = ZInput.mousePosition;
+                foreach (object e in elements)
                 {
-                    var elements = Traverse.Create(grid).Field("m_elements").GetValue() as IEnumerable;
-                    if (elements != null)
-                    {
-                        foreach (object e in elements)
-                        {
-                            var go = Traverse.Create(e).Field("m_go").GetValue<GameObject>();
-                            if (go != null && RectTransformUtility.RectangleContainsScreenPoint((RectTransform)go.transform, Input.mousePosition))
-                            {
-                                element = e;
-                                break;
-                            }
-                        }
-                    }
+                    var go = Traverse.Create(e).Field("m_go").GetValue<GameObject>();
+                    if (go == null || !go.activeInHierarchy) continue;
+
+                    var rt = (RectTransform)go.transform;
+                    Canvas canvas = go.GetComponentInParent<Canvas>();
+                    Camera cam = null;
+                    if (canvas != null && canvas.rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                        cam = canvas.rootCanvas.worldCamera;
+
+                    if (!RectTransformUtility.RectangleContainsScreenPoint(rt, mouse, cam)) continue;
+
+                    Vector2i pos = Traverse.Create(e).Field("m_pos").GetValue<Vector2i>();
+                    Plugin.Log.LogDebug($"Touche K : case ({pos.x},{pos.y}) survolée");
+                    return grid.GetInventory().GetItemAt(pos.x, pos.y);
                 }
-                if (element == null) return null;
-                Vector2i pos = Traverse.Create(element).Field("m_pos").GetValue<Vector2i>();
-                return grid.GetInventory().GetItemAt(pos.x, pos.y);
             }
-            catch (System.Exception e)
+            catch (System.Exception ex)
             {
-                Plugin.Log.LogWarning("Objet survolé introuvable : " + e.Message);
-                return null;
+                Plugin.Log.LogWarning("Objet survolé introuvable : " + ex.Message);
             }
+            return null;
         }
 
         public static void Open(ItemDrop.ItemData item)
