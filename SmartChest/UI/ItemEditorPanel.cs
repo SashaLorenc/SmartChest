@@ -31,43 +31,63 @@ namespace SmartChest.UI
         }
 
         /// <summary>
-        /// Objet sous la souris dans une grille d'inventaire. On parcourt les cases de la grille
-        /// (champ interne m_elements, lu par réflexion car son type n'est pas accessible) et on garde
-        /// celle dont le rectangle contient la souris, en tenant compte de la caméra du canvas
-        /// (sans elle, toutes les cases semblaient survolées et la première, celle de la barre 1, gagnait).
+        /// Objet sous la souris dans une grille d'inventaire.
+        /// 1) le jeu sait déjà quelle case est survolée : InventoryGrid.GetHoveredElement() ;
+        /// 2) sinon on cherche la case qui contient la souris (même calcul que le jeu).
+        /// La position de la case est ensuite donnée par InventoryGrid.GetButtonPos(GameObject),
+        /// la même méthode qu'utilise Quick Stack Store pour ses favoris.
+        /// Le type des cases (InventoryElement) a changé de nom selon les versions : on le lit par réflexion.
         /// </summary>
         private static ItemDrop.ItemData GetHoveredItem(InventoryGrid grid)
         {
             if (grid == null || grid.GetInventory() == null || !grid.gameObject.activeInHierarchy) return null;
             try
             {
-                var elements = Traverse.Create(grid).Field("m_elements").GetValue() as IEnumerable;
-                if (elements == null) return null;
+                GameObject slot = null;
 
-                Vector2 mouse = ZInput.mousePosition;
-                foreach (object e in elements)
+                Traverse hovered = Traverse.Create(grid).Method("GetHoveredElement");
+                if (hovered.MethodExists())
                 {
-                    var go = Traverse.Create(e).Field("m_go").GetValue<GameObject>();
-                    if (go == null || !go.activeInHierarchy) continue;
-
-                    var rt = (RectTransform)go.transform;
-                    Canvas canvas = go.GetComponentInParent<Canvas>();
-                    Camera cam = null;
-                    if (canvas != null && canvas.rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
-                        cam = canvas.rootCanvas.worldCamera;
-
-                    if (!RectTransformUtility.RectangleContainsScreenPoint(rt, mouse, cam)) continue;
-
-                    Vector2i pos = Traverse.Create(e).Field("m_pos").GetValue<Vector2i>();
-                    Plugin.Log.LogDebug($"Touche K : case ({pos.x},{pos.y}) survolée");
-                    return grid.GetInventory().GetItemAt(pos.x, pos.y);
+                    object element = hovered.GetValue();
+                    if (element != null) slot = SlotObject(element);
                 }
+
+                if (slot == null)
+                {
+                    var elements = Traverse.Create(grid).Field("m_elements").GetValue() as IEnumerable;
+                    if (elements == null) return null;
+                    Vector2 mouse = Input.mousePosition;
+                    foreach (object element in elements)
+                    {
+                        GameObject go = SlotObject(element);
+                        if (go == null || !go.activeInHierarchy) continue;
+                        var rt = (RectTransform)go.transform;
+                        if (rt.rect.Contains(rt.InverseTransformPoint(mouse)))
+                        {
+                            slot = go;
+                            break;
+                        }
+                    }
+                }
+
+                if (slot == null) return null;
+                Vector2i pos = grid.GetButtonPos(slot);
+                Plugin.Log.LogDebug($"Touche K : case ({pos.x},{pos.y}) survolée");
+                if (pos.x < 0 || pos.y < 0) return null;
+                return grid.GetInventory().GetItemAt(pos.x, pos.y);
             }
             catch (System.Exception ex)
             {
                 Plugin.Log.LogWarning("Objet survolé introuvable : " + ex.Message);
+                return null;
             }
-            return null;
+        }
+
+        /// <summary>Objet Unity d'une case (champ m_go). Renvoie null si le champ n'existe pas, au lieu d'une valeur par défaut.</summary>
+        private static GameObject SlotObject(object element)
+        {
+            Traverse go = Traverse.Create(element).Field("m_go");
+            return go.FieldExists() ? go.GetValue<GameObject>() : null;
         }
 
         public static void Open(ItemDrop.ItemData item)
