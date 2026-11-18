@@ -8,4 +8,4 @@ Mod Valheim (BepInEx + Jötunn) : donne des catégories aux coffres et aux objet
 - Fonctionne seul, en solo et sur serveur.
 - Compatible (optionnel) avec Quick Stack Store Sort Trash Restock.
 
-État : étape 1 (squelette). Voir `COMPILER.md` pour compiler.
+Voir `COMPILER.md` pour compiler et tester, et `COMPATIBILITE.md` pour les autres mods.

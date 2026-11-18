@@ -43,7 +43,8 @@ namespace SmartChest.UI
         internal static void OnInventoryUpdate(InventoryGui gui)
         {
             Container current = gui.IsContainerOpen() ? gui.m_currentContainer : null;
-            bool show = current != null && current.GetComponent<TombStone>() == null;
+            // Pas de boutons sur les sacs à dos, tombes, tas à objet unique, coffres de donjon...
+            bool show = current != null && Compat.ModCompat.IsEligibleChest(current);
 
             if (show && _buttons == null) CreateButtons(gui);
             if (_buttons != null && _buttons.activeSelf != show) _buttons.SetActive(show);

@@ -17,6 +17,8 @@ namespace SmartChest.Storing
             public HashSet<string> Categories;
             public ChestMode Mode;
             public float Distance;
+            /// <summary>Coffre modifié à distance (pas celui que le joueur a ouvert).</summary>
+            public bool Remote;
         }
 
         /// <summary>Range dans tous les coffres catégorisés à portée. Renvoie le nombre d'objets déplacés.</summary>
@@ -52,8 +54,8 @@ namespace SmartChest.Storing
 
         private static Target MakeTarget(Container c, Player player, float distance, bool isOpenByMe)
         {
-            if (c == null || c.m_nview == null || !c.m_nview.IsValid()) return null;
-            if (c.GetComponent<TombStone>() != null) return null;
+            // Vrai coffre posé par un joueur (pas un sac à dos, une tombe, un coffre de donjon...)
+            if (!ModCompat.IsEligibleChest(c)) return null;
             Inventory inv = c.GetInventory();
             if (inv == null || inv == player.GetInventory()) return null;
 
@@ -62,10 +64,8 @@ namespace SmartChest.Storing
 
             if (!isOpenByMe)
             {
-                // Coffre ouvert par un autre joueur, coffre privé ou protégé par une balise : on n'y touche pas
-                if (c.IsInUse()) return null;
-                if (!c.CheckAccess(player.GetPlayerID())) return null;
-                if (!PrivateArea.CheckAccess(c.transform.position, 0f, false, false)) return null;
+                // Coffre ouvert par un autre joueur, coffre privé, protégé par une balise, bateau en multi... : on n'y touche pas
+                if (!ModCompat.CanAffectRemotely(c, player)) return null;
             }
 
             return new Target
@@ -75,6 +75,7 @@ namespace SmartChest.Storing
                 Categories = new HashSet<string>(cats),
                 Mode = ChestCategories.GetMode(c),
                 Distance = distance,
+                Remote = !isOpenByMe,
             };
         }
 
@@ -95,6 +96,8 @@ namespace SmartChest.Storing
             foreach (ItemDrop.ItemData item in playerInv.GetAllItems().ToList())
             {
                 if (!CanStore(item) || QuickStackStoreCompat.IsFavorited(player, item)) continue;
+                // Emplacements d'équipement / raccourcis / carquois ajoutés par d'autres mods d'inventaire
+                if (ModCompat.IsProtectedSlot(playerInv, item.m_gridPos)) continue;
 
                 List<string> itemCats = CatalogManager.GetItemCategories(item);
 
@@ -120,6 +123,10 @@ namespace SmartChest.Storing
                     if (!playerInv.ContainsItem(item)) break;
                 }
             }
+
+            // Libère les coffres modifiés à distance
+            foreach (Target t in targets)
+                if (t.Remote && claimed.Contains(t.Container)) ModCompat.EndRemoteEdit(t.Container);
 
             string msg = movedTotal == 0
                 ? Localization.instance.Localize("$smartchest_msg_nothing")
@@ -147,7 +154,8 @@ namespace SmartChest.Storing
         {
             if (!claimed.Contains(t.Container))
             {
-                if (!t.Container.m_nview.IsOwner()) t.Container.m_nview.ClaimOwnership();
+                if (t.Remote) ModCompat.BeginRemoteEdit(t.Container);
+                else if (!t.Container.m_nview.IsOwner()) t.Container.m_nview.ClaimOwnership();
                 claimed.Add(t.Container);
             }
 

@@ -17,6 +17,11 @@ namespace SmartChest
     [BepInDependency(Main.ModGuid)]
     // Quick Stack Store Sort Trash Restock : dépendance optionnelle (on se branche seulement s'il est là)
     [BepInDependency(QuickStackStoreGuid, BepInDependency.DependencyFlags.SoftDependency)]
+    // Autres mods pris en charge (optionnels) : on se charge après eux pour pouvoir les détecter
+    [BepInDependency(ModCompat.AzuAutoStore, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(ModCompat.AzuEPI, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(ModCompat.MultiUserChest, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(ModCompat.DynamicStoragePiles, BepInDependency.DependencyFlags.SoftDependency)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin
     {
@@ -35,6 +40,7 @@ namespace SmartChest
         public static ConfigEntry<bool> SkipHotbar;
         public static ConfigEntry<bool> ShowCategoriesInTooltip;
         public static ConfigEntry<bool> QuickStackIntegration;
+        public static ConfigEntry<bool> AutoStoreIntegration;
         public static ConfigEntry<ButtonPlacement> ButtonsPlacement;
         public static ConfigEntry<float> ButtonsOffsetX;
         public static ConfigEntry<float> ButtonsOffsetY;
@@ -53,8 +59,15 @@ namespace SmartChest
             _harmony = new Harmony(ModGuid);
             _harmony.PatchAll(typeof(Plugin).Assembly);
             QuickStackStoreCompat.TryInit(_harmony);
+            AzuAutoStoreCompat.TryInit(_harmony);
 
             Logger.LogInfo($"{ModName} {ModVersion} chargé.");
+        }
+
+        private void Start()
+        {
+            // Tous les plugins sont chargés à ce moment-là
+            ModCompat.LogDetected();
         }
 
         private void Update()
@@ -104,6 +117,9 @@ namespace SmartChest
 
             QuickStackIntegration = Config.Bind("Compatibilite", "QuickStackStore", true,
                 "Avec Quick Stack Store Sort Trash Restock : le stockage rapide envoie aussi les objets vers les coffres de leur catégorie, et Tout stocker respecte les coffres en mode strict.");
+
+            AutoStoreIntegration = Config.Bind("Compatibilite", "AzuAutoStore", true,
+                "Avec AzuAutoStore : les coffres catégorisés reçoivent les objets de leurs catégories, et en mode strict refusent les autres.");
 
             SkipHotbar = Config.Bind("Rangement", "IgnorerBarreRaccourcis", true,
                 "Ne jamais ranger les objets de la barre de raccourcis (1 à 8).");
